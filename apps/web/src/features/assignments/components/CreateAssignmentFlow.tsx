@@ -14,7 +14,7 @@ import {
   TextField,
 } from '@radix-ui/themes'
 import { ArrowLeft, ArrowRight, Plus, Trash2 } from 'lucide-react'
-import { assignmentSchema, type AssignmentInput, categories, targetTypes } from '../model'
+import { assignmentSchema, type AssignmentInput, categories, partyTypes, type PartyType } from '../model'
 import { api, assignmentKeys } from '../../../lib/api'
 import { Field } from '../../../components/Field'
 const today = new Date().toISOString().slice(0, 10),
@@ -183,7 +183,7 @@ export function CreateAssignmentFlow() {
                   Add directors, shareholders, related companies, and any other parties to research.
                 </Text>
                 {parties.fields.map((f, i) => {
-                  const type = methods.watch(`parties.${i}.targetType`)
+                  const type = methods.watch(`parties.${i}.partyType`)
                   return (
                     <Card className="party" key={f.id}>
                       <div className="row">
@@ -204,22 +204,21 @@ export function CreateAssignmentFlow() {
                             value={type}
                             onValueChange={(v) =>
                               methods.setValue(
-                                `parties.${i}.targetType`,
-                                v as (typeof targetTypes)[number],
+                                `parties.${i}.partyType`,
+                                v as PartyType,
                               )
                             }
                           >
                             <Select.Trigger />
                             <Select.Content>
-                              {targetTypes.map((t) => (
-                                <Select.Item key={t} value={t}>
-                                  {t.replaceAll('_', ' ')}
-                                </Select.Item>
-                              ))}
+                              <Select.Item value="COMPANY">Company (Ultimate Parent)</Select.Item>
+                              <Select.Item value="INDIVIDUAL">Individual (Director / Shareholder)</Select.Item>
+                              <Select.Item value="SUBSIDIARY">Subsidiary</Select.Item>
+                              <Select.Item value="OTHER">Other</Select.Item>
                             </Select.Content>
                           </Select.Root>
                         </Field>
-                        <Field label="ID or registration number">
+                        <Field label={type === 'INDIVIDUAL' ? 'ID number or Passport' : 'Registration number'}>
                           <TextField.Root
                             {...methods.register(`parties.${i}.identificationNumber`)}
                           />
@@ -230,29 +229,29 @@ export function CreateAssignmentFlow() {
                         <Field label="Name in Thai">
                           <TextField.Root {...methods.register(`parties.${i}.nameThai`)} />
                         </Field>
-                        {type === 'DIRECTOR' && (
-                          <Field label="Date of birth">
+                        {(type === 'INDIVIDUAL' || type === 'OTHER') && (
+                          <Field label="Date of birth (optional)">
                             <TextField.Root
                               type="date"
                               {...methods.register(`parties.${i}.dateOfBirth`)}
                             />
                           </Field>
                         )}
-                        {type === 'SHAREHOLDER' && (
+                        {(type === 'COMPANY' || type === 'INDIVIDUAL') && (
                           <Field
-                            label="Ownership percentage"
-                            required
+                            label="Ownership percentage (optional)"
                             error={
                               methods.formState.errors.parties?.[i]?.ownershipPercentage?.message
                             }
                           >
                             <TextField.Root
                               type="number"
+                              placeholder="0-100"
                               {...methods.register(`parties.${i}.ownershipPercentage`)}
                             />
                           </Field>
                         )}
-                        <Field label="Relationship note">
+                        <Field label="Relationship note (optional)">
                           <TextField.Root {...methods.register(`parties.${i}.relationshipNote`)} />
                         </Field>
                       </div>
@@ -264,7 +263,7 @@ export function CreateAssignmentFlow() {
                   variant="soft"
                   onClick={() =>
                     parties.append({
-                      targetType: 'DIRECTOR',
+                      partyType: 'INDIVIDUAL',
                       nameEnglish: '',
                       nameThai: '',
                       identificationNumber: '',

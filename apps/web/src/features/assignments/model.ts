@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+// Backend target types
 export const targetTypes = [
   'DIRECTOR',
   'SHAREHOLDER',
@@ -7,6 +8,11 @@ export const targetTypes = [
   'SUBSIDIARY',
   'OTHER',
 ] as const
+
+// UI party types for checked parties form
+export const partyTypes = ['COMPANY', 'INDIVIDUAL', 'SUBSIDIARY', 'OTHER'] as const
+export type PartyType = (typeof partyTypes)[number]
+
 export const categories = [
   'LITIGATION',
   'BANKRUPTCY',
@@ -16,9 +22,17 @@ export const categories = [
 export type Category = (typeof categories)[number]
 export type AssignmentStatus = 'DRAFT' | 'IN_PROGRESS' | 'READY_TO_SUBMIT' | 'SUBMITTED'
 
+// Map UI party types to backend target types
+export function mapPartyTypeToBackend(partyType: PartyType, isOwner?: boolean): typeof targetTypes[number] {
+  if (partyType === 'COMPANY') return 'ULTIMATE_PARENT'
+  if (partyType === 'INDIVIDUAL') return isOwner ? 'SHAREHOLDER' : 'DIRECTOR'
+  if (partyType === 'SUBSIDIARY') return 'SUBSIDIARY'
+  return 'OTHER'
+}
+
 const partySchema = z
   .object({
-    targetType: z.enum(targetTypes),
+    partyType: z.enum(partyTypes),
     nameEnglish: z.string().min(1, 'English name is required'),
     nameThai: z.string(),
     identificationNumber: z.string(),
@@ -27,11 +41,11 @@ const partySchema = z
     relationshipNote: z.string(),
   })
   .superRefine((party, ctx) => {
+    // Ownership percentage required for companies with ownership (parent) or shareholders
     if (
-      party.targetType === 'SHAREHOLDER' &&
-      (!party.ownershipPercentage ||
-        Number(party.ownershipPercentage) < 0 ||
-        Number(party.ownershipPercentage) > 100)
+      (party.partyType === 'COMPANY' || party.partyType === 'INDIVIDUAL') &&
+      party.ownershipPercentage &&
+      (Number(party.ownershipPercentage) < 0 || Number(party.ownershipPercentage) > 100)
     )
       ctx.addIssue({
         code: 'custom',

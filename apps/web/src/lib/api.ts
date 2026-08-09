@@ -1,4 +1,5 @@
 import type { Assignment, AssignmentInput, EvidenceInput } from '../features/assignments/model'
+import { mapPartyTypeToBackend } from '../features/assignments/model'
 
 const KEY = 'cleartrace.assignments.v1'
 const wait = () => new Promise((r) => setTimeout(r, 350))
@@ -102,7 +103,7 @@ export const api = {
         },
         ...v.parties.map((p) => ({
           id: crypto.randomUUID(),
-          targetType: p.targetType,
+          targetType: mapPartyTypeToBackend(p.partyType, !!p.ownershipPercentage),
           nameEnglish: p.nameEnglish,
           nameThai: p.nameThai,
           identificationNumber: p.identificationNumber,
