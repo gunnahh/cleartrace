@@ -26,6 +26,7 @@
     "@prisma/client": "latest",
     "@prisma/adapter-pg": "latest",
     "bcryptjs": "latest",
+    "dotenv": "latest",
     "fastify": "latest",
     "fastify-type-provider-zod": "latest",
     "pg": "latest",
