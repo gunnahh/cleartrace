@@ -1,12 +1,21 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate, useSearch, Link } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { Badge, Button, Card, Heading, Select, Spinner, Text, TextField } from '@radix-ui/themes'
 import { Plus, Search, ArrowRight } from 'lucide-react'
-import { api, assignmentKeys } from '../../lib/api'
+import { api, assignmentKeys } from '../../../lib/api'
 const currentTime = new Date('2026-08-09T00:00:00Z').getTime()
-export function AssignmentsPage() {
-  const filters = useSearch({ from: '/app/assignments' })
-  const nav = useNavigate({ from: '/assignments' })
+
+export type AssignmentFilters = {
+  q: string
+  status: 'ALL' | 'DRAFT' | 'IN_PROGRESS' | 'READY_TO_SUBMIT' | 'SUBMITTED'
+}
+
+type AssignmentsListViewProps = {
+  filters: AssignmentFilters
+  onFiltersChange: (filters: AssignmentFilters) => void
+}
+
+export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsListViewProps) {
   const q = useQuery({ queryKey: assignmentKeys.list(filters), queryFn: api.list })
   const rows = (q.data || []).filter(
     (a) =>
@@ -60,7 +69,7 @@ export function AssignmentsPage() {
             aria-label="Search assignments"
             placeholder="Search ID or company…"
             value={filters.q}
-            onChange={(e) => nav({ search: (p) => ({ ...p, q: e.target.value }), replace: true })}
+            onChange={(event) => onFiltersChange({ ...filters, q: event.target.value })}
           >
             <TextField.Slot>
               <Search size={16} />
@@ -68,7 +77,9 @@ export function AssignmentsPage() {
           </TextField.Root>
           <Select.Root
             value={filters.status}
-            onValueChange={(status) => nav({ search: (p) => ({ ...p, status }), replace: true })}
+            onValueChange={(status) =>
+              onFiltersChange({ ...filters, status: status as AssignmentFilters['status'] })
+            }
           >
             <Select.Trigger aria-label="Filter by status" />
             <Select.Content>

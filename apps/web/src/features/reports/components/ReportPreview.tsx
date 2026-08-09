@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useParams, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { Badge, Button, Card, Heading, Spinner, Text } from '@radix-ui/themes'
 import { ArrowLeft, CheckCircle2, Printer, TriangleAlert } from 'lucide-react'
-import { api, assignmentKeys } from '../../lib/api'
-import { submissionIssues } from '../assignments/model'
-export function ReportPage() {
-  const { assignmentId } = useParams({ from: '/app/assignments/$assignmentId/report' })
+import { api, assignmentKeys } from '../../../lib/api'
+import { submissionIssues } from '../../assignments/model'
+
+export function ReportPreview({ assignmentId }: { assignmentId: string }) {
   const q = useQuery({
       queryKey: assignmentKeys.report(assignmentId),
       queryFn: () => api.get(assignmentId),

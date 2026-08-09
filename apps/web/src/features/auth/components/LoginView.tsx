@@ -1,14 +1,7 @@
 import { Button, Card, Heading, Text } from '@radix-ui/themes'
 import { Link } from '@tanstack/react-router'
-export function SimplePage({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="page">
-      <Heading>{title}</Heading>
-      <Text color="gray">{text}</Text>
-    </div>
-  )
-}
-export function LoginPage() {
+
+export function LoginView() {
   return (
     <main className="login">
       <Card size="4">

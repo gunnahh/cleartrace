@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useParams } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import * as Tabs from '@radix-ui/react-tabs'
 import * as Dialog from '@radix-ui/react-dialog'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -18,9 +18,9 @@ import {
   TextField,
 } from '@radix-ui/themes'
 import { ArrowLeft, FileSearch, Plus, X } from 'lucide-react'
-import { api, assignmentKeys } from '../../lib/api'
-import { categories, completion, evidenceSchema, type EvidenceInput } from '../assignments/model'
-import { Field } from '../../components/Field'
+import { api, assignmentKeys } from '../../../lib/api'
+import { categories, completion, evidenceSchema, type EvidenceInput } from '../../assignments/model'
+import { Field } from '../../../components/Field'
 const defaults: EvidenceInput = {
   targetId: '',
   category: 'LITIGATION',
@@ -34,9 +34,7 @@ const defaults: EvidenceInput = {
   reason: '',
   evidence: [],
 }
-export function AssignmentPage() {
-  const { id } = useParams({ strict: false }) as { id?: string }
-  const assignmentId = id || ''
+export function AssignmentResearchWorkspace({ assignmentId }: { assignmentId: string }) {
   const q = useQuery({
     queryKey: assignmentKeys.detail(assignmentId),
     queryFn: () => api.get(assignmentId),

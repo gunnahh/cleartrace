@@ -26,6 +26,7 @@ body {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 240px 1fr;
+  transition: grid-template-columns 160ms ease;
 }
 .app > aside {
   position: fixed;
@@ -34,6 +35,35 @@ body {
   background: #fff;
   border-right: 1px solid #e6e6ef;
   padding: 24px 14px;
+  transition: width 160ms ease;
+  z-index: 9;
+}
+.app.sidebar-collapsed {
+  grid-template-columns: 76px 1fr;
+}
+.app.sidebar-collapsed > aside {
+  width: 76px;
+  padding-inline: 10px;
+}
+.app.sidebar-collapsed nav > a {
+  justify-content: center;
+  padding-inline: 0;
+}
+.app.sidebar-collapsed .brand {
+  justify-content: center;
+  margin-inline: 0;
+}
+.app.sidebar-collapsed .brand-label,
+.app.sidebar-collapsed .nav-label {
+  display: none;
+}
+.sidebar-toggle {
+  position: absolute;
+  top: 76px;
+  right: -15px;
+  border: 1px solid #dedee8;
+  background: white;
+  box-shadow: 0 1px 3px #2222;
 }
 nav {
   display: flex;

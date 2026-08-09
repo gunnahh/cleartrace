@@ -14,9 +14,9 @@ import {
   TextField,
 } from '@radix-ui/themes'
 import { ArrowLeft, ArrowRight, Plus, Trash2 } from 'lucide-react'
-import { assignmentSchema, type AssignmentInput, categories, targetTypes } from './model'
-import { api, assignmentKeys } from '../../lib/api'
-import { Field } from '../../components/Field'
+import { assignmentSchema, type AssignmentInput, categories, targetTypes } from '../model'
+import { api, assignmentKeys } from '../../../lib/api'
+import { Field } from '../../../components/Field'
 const today = new Date().toISOString().slice(0, 10),
   past = new Date(new Date().setFullYear(new Date().getFullYear() - 10)).toISOString().slice(0, 10)
 const defaults: AssignmentInput = {
@@ -50,7 +50,7 @@ const input = (
     <TextField.Root type={type} {...r.register(name)} />
   </Field>
 )
-export function NewAssignmentPage() {
+export function CreateAssignmentFlow() {
   const [step, setStep] = useState(0)
   const methods = useForm<AssignmentInput>({
     resolver: zodResolver(assignmentSchema),
