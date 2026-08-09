@@ -18,6 +18,7 @@ vite.config.d.ts
 coverage/
 playwright-report/
 test-results/
+apps/api/data/
 
 # Logs
 *.log

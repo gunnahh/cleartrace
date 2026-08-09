@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  RESEARCHER
+  ADMIN
+}
+
+enum AssignmentStatus {
+  DRAFT
+  IN_PROGRESS
+  READY_TO_SUBMIT
+  SUBMITTED
+}
+
+enum TargetType {
+  COMPANY
+  DIRECTOR
+  SHAREHOLDER
+  PARENT_COMPANY
+  SUBSIDIARY
+}
+
+enum CheckCategory {
+  CIVIL
+  CRIMINAL
+  BANKRUPTCY
+  REHABILITATION
+  MEDIA
+}
+
+enum CheckStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  MATCH_FOUND
+  NO_RESULT
+}
+
+enum AttemptResult {
+  MATCH_FOUND
+  NO_RESULT
+}
+
+enum Sentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+model User {
+  id           String       @id @default(uuid()) @db.Uuid
+  name         String
+  email        String       @unique
+  passwordHash String
+  role         UserRole     @default(RESEARCHER)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  assignments  Assignment[]
+  reports      Report[]
+}
+
+model Assignment {
+  id              String           @id @default(uuid()) @db.Uuid
+  referenceNumber String           @unique
+  status          AssignmentStatus @default(DRAFT)
+  researcherId    String           @db.Uuid
+  dueDate         DateTime         @db.Date
+  submittedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  researcher      User             @relation(fields: [researcherId], references: [id], onDelete: Restrict)
+  companyProfile  CompanyProfile?
+  targets         ResearchTarget[]
+  reports         Report[]
+
+  @@index([status, dueDate])
+  @@index([researcherId, createdAt])
+}
+
+model CompanyProfile {
+  id                 String     @id @default(uuid()) @db.Uuid
+  assignmentId       String     @unique @db.Uuid
+  registeredNameTh   String
+  registeredNameEn   String
+  registrationNumber String
+  registrationDate   DateTime   @db.Date
+  businessType       String
+  registeredAddress  String
+  sourceReference    String
+  assignment         Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([registrationNumber])
+}
+
+model ResearchTarget {
+  id           String          @id @default(uuid()) @db.Uuid
+  assignmentId String          @db.Uuid
+  type         TargetType
+  nameTh       String
+  nameEn       String
+  identifier   String?
+  notes        String?
+  assignment   Assignment      @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  checks       ResearchCheck[]
+
+  @@index([assignmentId, type])
+  @@index([identifier])
+}
+
+model ResearchCheck {
+  id             String         @id @default(uuid()) @db.Uuid
+  targetId       String         @db.Uuid
+  category       CheckCategory
+  status         CheckStatus    @default(NOT_STARTED)
+  conclusion     String?
+  completedAt    DateTime?
+  target         ResearchTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  searchAttempts SearchAttempt[]
+  legalCases     LegalCase[]
+  mediaFindings  MediaFinding[]
+
+  @@unique([targetId, category])
+}
+
+model SearchAttempt {
+  id              String         @id @default(uuid()) @db.Uuid
+  researchCheckId String         @db.Uuid
+  sourceName      String
+  sourceUrl       String
+  queryText       String
+  searchedAt      DateTime
+  result          AttemptResult
+  researchCheck   ResearchCheck  @relation(fields: [researchCheckId], references: [id], onDelete: Cascade)
+  evidence        EvidenceFile[]
+
+  @@index([researchCheckId, searchedAt])
+}
+
+model EvidenceFile {
+  id              String        @id @default(uuid()) @db.Uuid
+  searchAttemptId String        @db.Uuid
+  storageKey      String        @unique
+  originalFileName String
+  mimeType        String
+  size            Int
+  caption         String?
+  uploadedAt      DateTime      @default(now())
+  searchAttempt   SearchAttempt @relation(fields: [searchAttemptId], references: [id], onDelete: Cascade)
+}
+
+model LegalCase {
+  id              String        @id @default(uuid()) @db.Uuid
+  researchCheckId String        @db.Uuid
+  caseType        String
+  caseNumber      String
+  courtName       String
+  plaintiff       String
+  defendant       String
+  filingDate      DateTime      @db.Date
+  judgmentDate    DateTime?     @db.Date
+  caseStatus      String
+  summary         String
+  sourceUrl       String
+  researchCheck   ResearchCheck @relation(fields: [researchCheckId], references: [id], onDelete: Cascade)
+
+  @@index([researchCheckId, caseNumber])
+}
+
+model MediaFinding {
+  id              String        @id @default(uuid()) @db.Uuid
+  researchCheckId String        @db.Uuid
+  title           String
+  publisher       String
+  publishedAt     DateTime      @db.Date
+  sourceUrl       String
+  sentiment       Sentiment
+  summary         String
+  researchCheck   ResearchCheck @relation(fields: [researchCheckId], references: [id], onDelete: Cascade)
+
+  @@index([researchCheckId, sentiment])
+}
+
+model Report {
+  id            String     @id @default(uuid()) @db.Uuid
+  assignmentId  String     @db.Uuid
+  version       Int
+  snapshotJson  Json
+  submittedAt   DateTime
+  submittedById String     @db.Uuid
+  assignment    Assignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  submittedBy   User       @relation(fields: [submittedById], references: [id], onDelete: Restrict)
+
+  @@unique([assignmentId, version])
+  @@index([submittedAt])
+}

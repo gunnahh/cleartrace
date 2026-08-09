@@ -1,21 +1,59 @@
 # ClearTrace — Company Research Workspace
 
-A production-oriented frontend MVP for a freelance company researcher. It records bilingual company/party profiles, category-specific searches, screenshot evidence, legal and media results, and a fixed-format submission report. All included names and records are fictional.
+ClearTrace is a full-stack, production-style MVP for recording bilingual company research, litigation and bankruptcy checks, media findings, screenshot evidence, and immutable submitted reports. All seed records are fictional.
 
-## Setup
+## Monorepo
 
-Requires Node 20+. Run `npm install`, then `npm run dev`. Quality commands are `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and `npm run test:e2e`.
+- `apps/web` — Vite, React, Radix UI, TanStack Router/Query, React Hook Form
+- `apps/api` — Fastify REST API, Prisma, PostgreSQL, JWT HTTP-only cookie auth
+- `packages/contracts` — shared Zod request schemas and inferred TypeScript DTOs
+- `packages/config`, `packages/eslint-config`, `packages/typescript-config` — reserved shared configuration boundaries
 
-## Architecture
+The API owns persistence and business rules. Shared contracts prevent request DTO duplication. Service functions enforce authorization and immutable submissions; routes handle transport concerns. Report submission runs in a transaction and saves a JSON snapshot so future source changes cannot alter submitted output.
 
-Features live under `src/features`, the responsive shell and routing under `src/app`, reusable fields under `src/components`, and the typed API adapter under `src/lib`. TanStack Query owns server-shaped data and invalidation; React Hook Form owns draft form data; TanStack Router search parameters own list filters. Zod schemas are the form validation source of truth.
+## Local setup
 
-The API adapter simulates network latency and persists fictional demo records in browser storage for the frontend demo. Components never access storage directly. To adopt a backend, replace the functions in `src/lib/api.ts` with HTTP requests while preserving their typed signatures and query keys. MSW can then intercept those endpoints for development and tests.
+1. Copy `.env.example` to `.env` and `apps/api/.env.example` to `apps/api/.env`.
+2. Run `docker compose up -d postgres`.
+3. Run `npm install`.
+4. Run `npm run db:migrate`, then `npm run db:seed`.
+5. Run `npm run dev:api` and `npm run dev` in separate terminals.
 
-## Accessibility
+The web app is available at `http://localhost:5173`, API at `http://localhost:3001`, and Swagger UI at `http://localhost:3001/docs`. The fictional seed login is `researcher@cleartrace.test` / `ClearTraceDemo123!`; change it outside local development.
 
-The UI uses Radix Themes and primitives, semantic landmarks, a skip link, visible focus indicators, labelled fields, associated errors, accessible dialogs/tabs/selects, mobile navigation, responsive overflow strategies, text status labels, and reduced-motion handling. The report uses print-specific styles for PDF output.
+## Run everything with Docker
+
+Copy `.env.example` to `.env`, set a strong `JWT_SECRET`, then run:
+
+```bash
+docker compose up --build
+docker compose exec api npm run db:seed
+```
+
+Open the application at `http://localhost:8080`. Nginx serves the SPA and proxies `/api` to Fastify; the API is also exposed directly at `http://localhost:3001`. PostgreSQL and uploaded evidence use named volumes. Migrations run automatically when the API container starts.
+
+Stop containers with `docker compose down`. Add `-v` only when you intentionally want to erase the local database and uploaded evidence volumes.
+
+## Commands
+
+- `npm run typecheck` — strict TypeScript across every workspace
+- `npm test` — unit and integration suites
+- `npm run build` — production builds
+- `npm run lint` — ESLint
+- `npm run format` / `npm run format:check` — Prettier
+- `npm run db:migrate` — create/apply a development migration
+- `npm run db:seed` — recreate fictional demo assignments
+
+## API and security decisions
+
+Authentication uses an eight-hour JWT in a secure, HTTP-only, same-site cookie. Passwords are hashed with bcrypt. CORS is restricted to `WEB_ORIGIN`; Helmet, request limits, upload limits, structured/redacted logging, and rate limiting are enabled. Uploads accept PNG, JPEG, or PDF only after checking both MIME type and file signature. Storage keys are random and filesystem paths are never returned as download paths.
+
+Every error has `{ code, message, fieldErrors, requestId }`. Assignment list endpoints support search, status, pagination, and sorting. Completion requires screenshot evidence for `NO_RESULT`, and legal-category `MATCH_FOUND` checks require a structured case. Submitted assignments reject subsequent writes, and report snapshots are append-only.
+
+## Testing
+
+Business-rule tests do not need a database. PostgreSQL route integration tests should use a dedicated database via `TEST_DATABASE_URL`; migrations must be applied before the suite. Docker Compose supplies the development database. A complete Playwright workflow requires both servers and the test database to be running.
 
 ## MVP limitations
 
-Authentication is a demonstrative login route, file uploads store filename metadata rather than bytes, and structured case/media creation screens are represented as workspace states rather than a complete backend-backed editor. Browser storage is a mock API convenience, not production persistence. Connect the adapter to authenticated server endpoints and object storage before handling client data.
+Uploaded evidence uses local controlled storage; production should replace it with S3/R2 signed downloads and malware scanning. The existing frontend demo adapter remains available for isolated component states while `src/lib/http.ts` provides the real typed backend boundary. Finish mapping each current screen to the REST DTOs before using real client data. Fine-grained audit logs, refresh-token rotation, password reset, and external identity providers remain out of scope.
