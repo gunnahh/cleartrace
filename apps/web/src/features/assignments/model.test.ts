@@ -84,3 +84,39 @@ describe('completion', () => {
     expect(submissionIssues(a)[0]).toContain('1 required')
   })
 })
+
+describe('submission issues for legal matches', () => {
+  it('requires one structured case per legal check while deduplicating language attempts', () => {
+    const legalAttempt = {
+      category: 'LITIGATION',
+      result: 'RECORD_FOUND',
+      evidence: ['match.pdf'],
+      sourceName: 'Court',
+      sourceUrl: 'https://example.com/court',
+      resultPageUrl: '',
+      searchQuery: 'Example',
+      searchedAt: '2026-08-01',
+      reason: '',
+    }
+    const assignment = {
+      targets: [],
+      categories: [],
+      attempts: [
+        { ...legalAttempt, id: 'en', targetId: 'target-1', searchLanguage: 'EN' },
+        { ...legalAttempt, id: 'th', targetId: 'target-1', searchLanguage: 'TH' },
+        { ...legalAttempt, id: 'other', targetId: 'target-2', searchLanguage: 'EN' },
+      ],
+      cases: [{ researchCheckKey: 'target-1:LITIGATION' }],
+      media: [],
+    } as unknown as Assignment
+
+    expect(submissionIssues(assignment)).toContain(
+      '1 legal record match needs a linked structured case',
+    )
+
+    assignment.cases.push({
+      researchCheckKey: 'target-2:LITIGATION',
+    } as Assignment['cases'][number])
+    expect(submissionIssues(assignment).some((issue) => issue.includes('legal record'))).toBe(false)
+  })
+})

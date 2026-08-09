@@ -17,10 +17,12 @@ import {
   TextArea,
   TextField,
 } from '@radix-ui/themes'
-import { ArrowLeft, FileSearch, Plus, X } from 'lucide-react'
+import { ArrowLeft, Plus, X } from 'lucide-react'
 import { api, assignmentKeys } from '../../../lib/api'
 import { categories, completion, evidenceSchema, type EvidenceInput } from '../../assignments/model'
 import { Field } from '../../../components/Field'
+import { CaseDetailsTab } from '../../legal-cases'
+import type { AssignmentWorkspaceTab } from '../model/assignment-workspace-tab'
 const defaults: EvidenceInput = {
   targetId: '',
   category: 'LITIGATION',
@@ -34,7 +36,15 @@ const defaults: EvidenceInput = {
   reason: '',
   evidence: [],
 }
-export function AssignmentResearchWorkspace({ assignmentId }: { assignmentId: string }) {
+export function AssignmentResearchWorkspace({
+  assignmentId,
+  activeTab,
+  onTabChange,
+}: {
+  assignmentId: string
+  activeTab: AssignmentWorkspaceTab
+  onTabChange: (tab: AssignmentWorkspaceTab) => void
+}) {
   const q = useQuery({
     queryKey: assignmentKeys.detail(assignmentId),
     queryFn: () => api.get(assignmentId),
@@ -101,7 +111,11 @@ export function AssignmentResearchWorkspace({ assignmentId }: { assignmentId: st
           Progress counts every required category and available English/Thai name.
         </Text>
       </Card>
-      <Tabs.Root className="tabs" defaultValue="parties">
+      <Tabs.Root
+        className="tabs"
+        value={activeTab}
+        onValueChange={(value) => onTabChange(value as AssignmentWorkspaceTab)}
+      >
         <Tabs.List>
           <Tabs.Trigger value="parties">Checked parties</Tabs.Trigger>
           <Tabs.Trigger value="legal">Legal matches</Tabs.Trigger>
@@ -117,71 +131,279 @@ export function AssignmentResearchWorkspace({ assignmentId }: { assignmentId: st
                 Add evidence
               </Button>
             </div>
-            <div className="targetgrid">
-              {a.targets.map((t) => {
-                const done = a.attempts.filter((x) => x.targetId === t.id).length
-                return (
-                  <Card key={t.id}>
-                    <Badge variant="soft">{t.targetType.replaceAll('_', ' ')}</Badge>
-                    <strong>{t.nameEnglish}</strong>
-                    <span>{t.nameThai || 'No Thai name recorded'}</span>
-                    <small>{t.identificationNumber || 'No ID recorded'}</small>
-                    <Text size="2">{done} searches recorded</Text>
-                  </Card>
-                )
-              })}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {a.targets
+                .filter((t) => t.targetType !== 'SUBJECT_COMPANY')
+                .map((t) => {
+                  const searches = a.attempts.filter((x) => x.targetId === t.id)
+                  const required = a.categories
+                    .flatMap((category) => [
+                      t.nameEnglish ? { category, language: 'EN' as const } : null,
+                      t.nameThai ? { category, language: 'TH' as const } : null,
+                    ])
+                    .filter(
+                      (x): x is { category: (typeof categories)[number]; language: 'EN' | 'TH' } =>
+                        x !== null,
+                    )
+                  const completed = required.filter((r) =>
+                    searches.some(
+                      (x) => x.category === r.category && x.searchLanguage === r.language,
+                    ),
+                  ).length
+                  return (
+                    <Card key={t.id} style={{ padding: '1rem' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'start',
+                          marginBottom: '0.5rem',
+                        }}
+                      >
+                        <div>
+                          <Badge variant="soft">{t.targetType.replaceAll('_', ' ')}</Badge>
+                          <Heading size="4" style={{ margin: '0.5rem 0 0 0' }}>
+                            {t.nameEnglish}
+                          </Heading>
+                          {t.nameThai && (
+                            <Text size="2" color="gray">
+                              {t.nameThai}
+                            </Text>
+                          )}
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <Badge color={completed === required.length ? 'green' : 'gray'}>
+                            {completed} of {required.length} required
+                          </Badge>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          gap: '1rem',
+                          fontSize: '0.875rem',
+                          marginTop: '0.5rem',
+                        }}
+                      >
+                        {t.identificationNumber && (
+                          <div>
+                            <Text size="1" color="gray">
+                              ID / Registration
+                            </Text>
+                            <Text size="2">{t.identificationNumber}</Text>
+                          </div>
+                        )}
+                        {t.ownershipPercentage && (
+                          <div>
+                            <Text size="1" color="gray">
+                              Ownership
+                            </Text>
+                            <Text size="2">{t.ownershipPercentage}%</Text>
+                          </div>
+                        )}
+                        <div>
+                          <Text size="1" color="gray">
+                            Searches recorded
+                          </Text>
+                          <Text size="2">{searches.length}</Text>
+                        </div>
+                      </div>
+                    </Card>
+                  )
+                })}
             </div>
           </Card>
         </Tabs.Content>
         <Tabs.Content value="legal">
           <Card className="panel">
             <Heading size="4">Legal matches & evidence</Heading>
-            {a.targets.map((t) => (
-              <div className="evidencerow" key={t.id}>
-                <div>
-                  <strong>{t.nameEnglish}</strong>
-                  <small>{t.nameThai}</small>
-                </div>
-                <span>
-                  Litigation:{' '}
-                  {
-                    a.attempts.filter((x) => x.targetId === t.id && x.category === 'LITIGATION')
-                      .length
-                  }
-                </span>
-                <span>
-                  Bankruptcy:{' '}
-                  {
-                    a.attempts.filter((x) => x.targetId === t.id && x.category === 'BANKRUPTCY')
-                      .length
-                  }
-                </span>
-                <Button
-                  variant="soft"
-                  onClick={() => {
-                    form.setValue('targetId', t.id)
-                    setOpen(true)
-                  }}
-                >
-                  Add evidence
-                </Button>
-              </div>
-            ))}
+            <div
+              style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '1rem' }}
+            >
+              {a.targets
+                .filter((t) => t.targetType !== 'SUBJECT_COMPANY')
+                .map((t) => {
+                  const litigation = a.attempts.filter(
+                    (x) => x.targetId === t.id && x.category === 'LITIGATION',
+                  )
+                  const bankruptcy = a.attempts.filter(
+                    (x) => x.targetId === t.id && x.category === 'BANKRUPTCY',
+                  )
+                  const litigationRecords = litigation.filter((x) => x.result === 'RECORD_FOUND')
+                  const bankruptcyRecords = bankruptcy.filter((x) => x.result === 'RECORD_FOUND')
+                  return (
+                    <Card key={t.id} style={{ padding: '1rem' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'start',
+                          marginBottom: '1rem',
+                        }}
+                      >
+                        <div>
+                          <Heading size="4">{t.nameEnglish}</Heading>
+                          {t.nameThai && (
+                            <Text size="2" color="gray">
+                              {t.nameThai}
+                            </Text>
+                          )}
+                        </div>
+                        <Button
+                          variant="soft"
+                          onClick={() => {
+                            form.setValue('targetId', t.id)
+                            form.setValue('category', 'LITIGATION')
+                            setOpen(true)
+                          }}
+                        >
+                          <Plus />
+                          Add evidence
+                        </Button>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div style={{ borderLeft: '2px solid var(--iris-5)', paddingLeft: '1rem' }}>
+                          <Text size="1" weight="bold" color="gray">
+                            Litigation
+                          </Text>
+                          <Text size="3" weight="bold" style={{ marginTop: '0.25rem' }}>
+                            {litigationRecords.length}
+                          </Text>
+                          <Text size="1" color="gray" style={{ marginTop: '0.25rem' }}>
+                            {litigation.length} total searches
+                          </Text>
+                        </div>
+                        <div style={{ borderLeft: '2px solid var(--iris-5)', paddingLeft: '1rem' }}>
+                          <Text size="1" weight="bold" color="gray">
+                            Bankruptcy
+                          </Text>
+                          <Text size="3" weight="bold" style={{ marginTop: '0.25rem' }}>
+                            {bankruptcyRecords.length}
+                          </Text>
+                          <Text size="1" color="gray" style={{ marginTop: '0.25rem' }}>
+                            {bankruptcy.length} total searches
+                          </Text>
+                        </div>
+                      </div>
+                    </Card>
+                  )
+                })}
+            </div>
           </Card>
         </Tabs.Content>
         <Tabs.Content value="cases">
-          <Card className="state">
-            <FileSearch />
-            <Heading size="4">Structured case records</Heading>
-            <Text color="gray">
-              No matched legal cases have been added yet. Add record-found evidence to begin.
-            </Text>
-          </Card>
+          <CaseDetailsTab assignment={a} onReviewLegalMatches={() => onTabChange('legal')} />
         </Tabs.Content>
         <Tabs.Content value="media">
-          <Card className="state">
-            <Heading size="4">Media findings</Heading>
-            <Text color="gray">Positive/neutral and negative news findings will appear here.</Text>
+          <Card className="panel">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              <div>
+                <Heading size="4">Positive & neutral news</Heading>
+                <Text size="2" color="gray" style={{ marginBottom: '1rem' }}>
+                  {a.media.filter((m) => m.sentiment !== 'NEGATIVE').length} findings
+                </Text>
+                {a.media.filter((m) => m.sentiment !== 'NEGATIVE').length === 0 ? (
+                  <Text color="gray">No positive or neutral findings recorded yet.</Text>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {a.media
+                      .filter((m) => m.sentiment !== 'NEGATIVE')
+                      .map((m, i) => (
+                        <Card key={i} style={{ padding: '1rem' }}>
+                          <Heading size="4">{m.title}</Heading>
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '1fr 1fr',
+                              gap: '1rem',
+                              marginTop: '0.5rem',
+                              fontSize: '0.875rem',
+                            }}
+                          >
+                            <div>
+                              <Text size="1" color="gray">
+                                Publisher
+                              </Text>
+                              <Text size="2">{m.publisher}</Text>
+                            </div>
+                            <div>
+                              <Text size="1" color="gray">
+                                Publication date
+                              </Text>
+                              <Text size="2">{m.publisher}</Text>
+                            </div>
+                          </div>
+                          <div style={{ marginTop: '0.5rem' }}>
+                            <Text size="1" color="gray">
+                              Summary
+                            </Text>
+                            <Text size="2" style={{ marginTop: '0.25rem' }}>
+                              {m.summaryEnglish}
+                            </Text>
+                          </div>
+                        </Card>
+                      ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <Heading size="4">Negative news</Heading>
+                <Text size="2" color="gray" style={{ marginBottom: '1rem' }}>
+                  {a.media.filter((m) => m.sentiment === 'NEGATIVE').length} findings
+                </Text>
+                {a.media.filter((m) => m.sentiment === 'NEGATIVE').length === 0 ? (
+                  <Text color="gray">No negative findings recorded yet.</Text>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {a.media
+                      .filter((m) => m.sentiment === 'NEGATIVE')
+                      .map((m, i) => (
+                        <Card
+                          key={i}
+                          style={{
+                            padding: '1rem',
+                            borderLeftColor: '#fc5757',
+                            borderLeftWidth: '3px',
+                          }}
+                        >
+                          <Heading size="4">{m.title}</Heading>
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '1fr 1fr',
+                              gap: '1rem',
+                              marginTop: '0.5rem',
+                              fontSize: '0.875rem',
+                            }}
+                          >
+                            <div>
+                              <Text size="1" color="gray">
+                                Publisher
+                              </Text>
+                              <Text size="2">{m.publisher}</Text>
+                            </div>
+                            <div>
+                              <Text size="1" color="gray">
+                                Publication date
+                              </Text>
+                              <Text size="2">{m.publisher}</Text>
+                            </div>
+                          </div>
+                          <div style={{ marginTop: '0.5rem' }}>
+                            <Text size="1" color="gray">
+                              Summary
+                            </Text>
+                            <Text size="2" style={{ marginTop: '0.25rem' }}>
+                              {m.summaryEnglish}
+                            </Text>
+                          </div>
+                        </Card>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </Card>
         </Tabs.Content>
       </Tabs.Root>

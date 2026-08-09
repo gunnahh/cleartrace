@@ -5,23 +5,25 @@ export function Field({
   required,
   children,
   hint,
+  id,
 }: {
   label: string
   error?: string
   required?: boolean
   children: ReactNode
   hint?: string
+  id?: string
 }) {
   return (
-    <label className="field">
+    <label className="field" htmlFor={id}>
       <span>
         {label}
         {required && <em aria-hidden="true"> *</em>}
       </span>
       {children}
-      {hint && <small>{hint}</small>}
+      {hint && <small id={id ? `${id}-hint` : undefined}>{hint}</small>}
       {error && (
-        <small className="error" role="alert">
+        <small className="error" id={id ? `${id}-error` : undefined} role="alert">
           {error}
         </small>
       )}

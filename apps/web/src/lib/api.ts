@@ -1,5 +1,13 @@
 import type { Assignment, AssignmentInput, EvidenceInput } from '../features/assignments/model'
 import { mapPartyTypeToBackend } from '../features/assignments/model'
+import {
+  createResearchCheckKey,
+  isHttpUrl,
+  legalCaseDefaults,
+  legalCaseFormSchema,
+  type LegalCase,
+  type LegalCaseInput,
+} from '../entities/legal-case'
 
 const KEY = 'cleartrace.assignments.v1'
 const wait = () => new Promise((r) => setTimeout(r, 350))
@@ -65,9 +73,57 @@ const seed: Assignment[] = [
 ]
 function load() {
   try {
-    return (JSON.parse(localStorage.getItem(KEY) || 'null') as Assignment[]) || seed
+    const parsed: unknown = JSON.parse(localStorage.getItem(KEY) || 'null')
+    if (!Array.isArray(parsed)) return seed
+    return parsed
+      .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+      .map(normalizeAssignment)
   } catch {
     return seed
+  }
+}
+
+function normalizeAssignment(value: Record<string, unknown>): Assignment {
+  const assignment = value as unknown as Assignment
+  const storedCases = Array.isArray(value.cases) ? value.cases : []
+  return {
+    ...assignment,
+    categories: Array.isArray(value.categories) ? assignment.categories : [],
+    formerNames: Array.isArray(value.formerNames) ? assignment.formerNames : [],
+    parties: Array.isArray(value.parties) ? assignment.parties : [],
+    targets: Array.isArray(value.targets) ? assignment.targets : [],
+    attempts: Array.isArray(value.attempts) ? assignment.attempts : [],
+    media: Array.isArray(value.media) ? assignment.media : [],
+    cases: storedCases
+      .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+      .map((item, index) => normalizeLegalCase(assignment, item, index)),
+  }
+}
+
+function normalizeLegalCase(
+  assignment: Assignment,
+  value: Record<string, unknown>,
+  index: number,
+): LegalCase {
+  const legacy = value as Partial<LegalCase>
+  const category = legacy.category === 'BANKRUPTCY' ? 'BANKRUPTCY' : 'LITIGATION'
+  const targetId = typeof legacy.targetId === 'string' ? legacy.targetId : ''
+  const sourceUrl =
+    typeof legacy.sourceUrl === 'string' && isHttpUrl(legacy.sourceUrl) ? legacy.sourceUrl : ''
+  return {
+    ...legalCaseDefaults,
+    ...legacy,
+    id: typeof legacy.id === 'string' ? legacy.id : `legacy-${assignment.id}-${index}`,
+    targetId,
+    category,
+    sourceUrl,
+    researchCheckKey:
+      typeof legacy.researchCheckKey === 'string'
+        ? legacy.researchCheckKey
+        : targetId
+          ? createResearchCheckKey(targetId, category)
+          : '',
+    createdAt: typeof legacy.createdAt === 'string' ? legacy.createdAt : assignment.createdAt || '',
   }
 }
 function save(v: Assignment[]) {
@@ -125,6 +181,41 @@ export const api = {
     a.attempts.push({ ...v, id: crypto.randomUUID() })
     save(all)
     return a
+  },
+  async addLegalCase(id: string, v: LegalCaseInput) {
+    await wait()
+    const input = legalCaseFormSchema.parse(v)
+    const all = load()
+    const assignment = all.find((item) => item.id === id)
+    if (!assignment) throw Error('Assignment not found')
+    if (assignment.status === 'SUBMITTED') throw Error('Submitted assignments are read-only')
+
+    const attempt = assignment.attempts.find((item) => {
+      if (
+        item.result !== 'RECORD_FOUND' ||
+        (item.category !== 'LITIGATION' && item.category !== 'BANKRUPTCY')
+      )
+        return false
+      return createResearchCheckKey(item.targetId, item.category) === input.researchCheckKey
+    })
+    if (
+      !attempt ||
+      attempt.result !== 'RECORD_FOUND' ||
+      (attempt.category !== 'LITIGATION' && attempt.category !== 'BANKRUPTCY')
+    )
+      throw Error('Select a record-found litigation or bankruptcy match')
+
+    const legalCase = {
+      ...input,
+      id: crypto.randomUUID(),
+      targetId: attempt.targetId,
+      category: attempt.category,
+      createdAt: new Date().toISOString(),
+    }
+    assignment.cases ??= []
+    assignment.cases.push(legalCase)
+    save(all)
+    return legalCase
   },
   async submit(id: string) {
     await wait()

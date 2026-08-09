@@ -14,7 +14,7 @@ import {
   TextField,
 } from '@radix-ui/themes'
 import { ArrowLeft, ArrowRight, Plus, Trash2 } from 'lucide-react'
-import { assignmentSchema, type AssignmentInput, categories, partyTypes, type PartyType } from '../model'
+import { assignmentSchema, type AssignmentInput, categories, type PartyType } from '../model'
 import { api, assignmentKeys } from '../../../lib/api'
 import { Field } from '../../../components/Field'
 const today = new Date().toISOString().slice(0, 10),
@@ -45,8 +45,9 @@ const input = (
   name: keyof AssignmentInput,
   label: string,
   type: 'text' | 'date' | 'number' | 'url' = 'text',
+  required = true,
 ) => (
-  <Field label={label} error={r.formState.errors[name]?.message as string} required>
+  <Field label={label} error={r.formState.errors[name]?.message as string} required={required}>
     <TextField.Root type={type} {...r.register(name)} />
   </Field>
 )
@@ -163,9 +164,9 @@ export function CreateAssignmentFlow() {
                   <Field label="Registered address in Thai" required>
                     <TextArea {...methods.register('addressThai')} />
                   </Field>
-                  {input(methods, 'website', 'Website')}
+                  {input(methods, 'website', 'Website', 'url', false)}
                   {input(methods, 'registeredCapital', 'Registered capital', 'number')}
-                  {input(methods, 'paidUpCapital', 'Paid-up capital', 'number')}
+                  {input(methods, 'paidUpCapital', 'Paid-up capital', 'number', false)}
                   {input(methods, 'currency', 'Currency')}
                   <Field label="Line of business in English" required>
                     <TextArea {...methods.register('businessEnglish')} />
@@ -203,22 +204,23 @@ export function CreateAssignmentFlow() {
                           <Select.Root
                             value={type}
                             onValueChange={(v) =>
-                              methods.setValue(
-                                `parties.${i}.partyType`,
-                                v as PartyType,
-                              )
+                              methods.setValue(`parties.${i}.partyType`, v as PartyType)
                             }
                           >
                             <Select.Trigger />
                             <Select.Content>
-                              <Select.Item value="COMPANY">Company (Ultimate Parent)</Select.Item>
-                              <Select.Item value="INDIVIDUAL">Individual (Director / Shareholder)</Select.Item>
+                              <Select.Item value="COMPANY">Company</Select.Item>
+                              <Select.Item value="INDIVIDUAL">Individual</Select.Item>
                               <Select.Item value="SUBSIDIARY">Subsidiary</Select.Item>
                               <Select.Item value="OTHER">Other</Select.Item>
                             </Select.Content>
                           </Select.Root>
                         </Field>
-                        <Field label={type === 'INDIVIDUAL' ? 'ID number or Passport' : 'Registration number'}>
+                        <Field
+                          label={
+                            type === 'INDIVIDUAL' ? 'ID number or Passport' : 'Registration number'
+                          }
+                        >
                           <TextField.Root
                             {...methods.register(`parties.${i}.identificationNumber`)}
                           />

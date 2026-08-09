@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { createResearchCheckKey, type LegalCase } from '../../entities/legal-case'
 
 // Backend target types
 export const targetTypes = [
@@ -23,7 +24,10 @@ export type Category = (typeof categories)[number]
 export type AssignmentStatus = 'DRAFT' | 'IN_PROGRESS' | 'READY_TO_SUBMIT' | 'SUBMITTED'
 
 // Map UI party types to backend target types
-export function mapPartyTypeToBackend(partyType: PartyType, isOwner?: boolean): typeof targetTypes[number] {
+export function mapPartyTypeToBackend(
+  partyType: PartyType,
+  isOwner?: boolean,
+): (typeof targetTypes)[number] {
   if (partyType === 'COMPANY') return 'ULTIMATE_PARENT'
   if (partyType === 'INDIVIDUAL') return isOwner ? 'SHAREHOLDER' : 'DIRECTOR'
   if (partyType === 'SUBSIDIARY') return 'SUBSIDIARY'
@@ -117,7 +121,7 @@ export type Assignment = AssignmentInput & {
   createdAt: string
   targets: Target[]
   attempts: SearchAttempt[]
-  cases: { caseNumber: string; targetRole: string; courtName: string; verdictOutcome: string }[]
+  cases: LegalCase[]
   media: { title: string; sentiment: string; publisher: string; summaryEnglish: string }[]
 }
 
@@ -195,7 +199,32 @@ export function submissionIssues(a: Assignment) {
     issues.push(`${p.total - p.complete} required language searches are incomplete`)
   if (a.attempts.some((x) => !x.evidence.length))
     issues.push('Every search attempt needs supporting evidence')
-  if (a.attempts.some((x) => x.result === 'RECORD_FOUND') && !a.cases.length && !a.media.length)
-    issues.push('Record-found attempts need a structured case or media finding')
+  const legalCheckKeys = new Set(
+    a.attempts
+      .filter(
+        (attempt) =>
+          attempt.result === 'RECORD_FOUND' &&
+          (attempt.category === 'LITIGATION' || attempt.category === 'BANKRUPTCY'),
+      )
+      .map((attempt) =>
+        createResearchCheckKey(attempt.targetId, attempt.category as 'LITIGATION' | 'BANKRUPTCY'),
+      ),
+  )
+  const documentedLegalChecks = new Set(a.cases.map((legalCase) => legalCase.researchCheckKey))
+  const undocumentedLegalChecks = [...legalCheckKeys].filter(
+    (key) => !documentedLegalChecks.has(key),
+  )
+  if (undocumentedLegalChecks.length)
+    issues.push(
+      `${undocumentedLegalChecks.length} legal record ${undocumentedLegalChecks.length === 1 ? 'match needs' : 'matches need'} a linked structured case`,
+    )
+
+  const hasMediaMatch = a.attempts.some(
+    (attempt) =>
+      attempt.result === 'RECORD_FOUND' &&
+      (attempt.category === 'MEDIA_POSITIVE_NEUTRAL' || attempt.category === 'MEDIA_NEGATIVE'),
+  )
+  if (hasMediaMatch && !a.media.length)
+    issues.push('Record-found media searches need a structured media finding')
   return issues
 }
