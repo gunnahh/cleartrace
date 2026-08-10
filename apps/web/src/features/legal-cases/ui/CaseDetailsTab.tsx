@@ -1,7 +1,17 @@
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as Dialog from '@radix-ui/react-dialog'
-import { Badge, Button, Card, Heading, Select, Text, TextArea, TextField } from '@radix-ui/themes'
+import {
+  Badge,
+  Button,
+  Card,
+  Heading,
+  Select,
+  Text,
+  TextArea,
+  TextField,
+  Theme,
+} from '@radix-ui/themes'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ExternalLink, FileText, Gavel, Plus, X } from 'lucide-react'
 import { Controller, useForm, type UseFormReturn } from 'react-hook-form'
@@ -39,6 +49,7 @@ export function CaseDetailsTab({
   onReviewLegalMatches: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const queryClient = useQueryClient()
   const legalChecks = getLegalCheckMatches(assignment.attempts)
@@ -225,395 +236,395 @@ export function CaseDetailsTab({
 
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
-          <Dialog.Overlay className="overlay" />
-          <Dialog.Content className="dialog case-dialog">
-            <div className="sectionhead">
-              <div>
-                <Dialog.Title>Add legal case</Dialog.Title>
-                <Dialog.Description>
-                  Capture the court record in structured fields for reporting and review.
-                </Dialog.Description>
+          <Theme ref={setPortalContainer}>
+            <Dialog.Overlay className="overlay" />
+            <Dialog.Content className="dialog case-dialog">
+              <div className="sectionhead">
+                <div>
+                  <Dialog.Title>Add legal case</Dialog.Title>
+                  <Dialog.Description>
+                    Capture the court record in structured fields for reporting and review.
+                  </Dialog.Description>
+                </div>
+                <Dialog.Close asChild>
+                  <Button variant="ghost" aria-label="Close legal case form">
+                    <X />
+                  </Button>
+                </Dialog.Close>
               </div>
-              <Dialog.Close asChild>
-                <Button variant="ghost" aria-label="Close legal case form">
-                  <X />
-                </Button>
-              </Dialog.Close>
-            </div>
 
-            <form onSubmit={form.handleSubmit((input) => mutation.mutate(input))} noValidate>
-              {form.formState.submitCount > 0 && !form.formState.isValid && (
-                <div className="errorsummary" role="alert">
-                  <span>
-                    <strong>Review the highlighted fields.</strong>
-                    The case has not been saved yet.
-                  </span>
-                </div>
-              )}
-              <fieldset className="case-form-section">
-                <legend>Legal check</legend>
-                <Controller
-                  control={form.control}
-                  name="researchCheckKey"
-                  render={({ field, fieldState }) => (
-                    <div className="field">
-                      <span id="legal-case-check-label">
-                        Linked research check
-                        <em aria-hidden="true"> *</em>
-                      </span>
-                      <Select.Root value={field.value} onValueChange={field.onChange}>
-                        <Select.Trigger
-                          id="legal-case-check"
-                          aria-labelledby="legal-case-check-label"
-                          aria-required="true"
-                          aria-invalid={fieldState.invalid || undefined}
-                          aria-describedby={`legal-case-check-hint${fieldState.error ? ' legal-case-check-error' : ''}`}
-                          placeholder="Select a legal check"
-                        />
-                        <Select.Content>
-                          {legalChecks.map((check) => (
-                            <Select.Item value={check.key} key={check.key}>
-                              {legalCheckLabel(assignment, check)}
-                            </Select.Item>
-                          ))}
-                        </Select.Content>
-                      </Select.Root>
-                      <small id="legal-case-check-hint">
-                        Only record-found litigation and bankruptcy searches are available.
-                      </small>
-                      {fieldState.error && (
-                        <small className="error" id="legal-case-check-error" role="alert">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </div>
-                  )}
-                />
-              </fieldset>
-
-              <fieldset className="case-form-section">
-                <legend>Case and court</legend>
-                <div className="grid2">
-                  <Field
-                    id="legal-case-number"
-                    label="Case number"
-                    required
-                    error={form.formState.errors.caseNumber?.message}
-                  >
-                    <TextField.Root
-                      placeholder="e.g. CIV-123/2026"
-                      {...fieldA11y(
-                        'legal-case-number',
-                        form.formState.errors.caseNumber?.message,
-                        true,
-                      )}
-                      {...form.register('caseNumber')}
-                    />
-                  </Field>
-                  <SelectField
-                    label="Classification"
-                    name="classification"
-                    values={legalCaseClassifications}
-                    form={form}
+              <form onSubmit={form.handleSubmit((input) => mutation.mutate(input))} noValidate>
+                {form.formState.submitCount > 0 && !form.formState.isValid && (
+                  <div className="errorsummary" role="alert">
+                    <span>
+                      <strong>Review the highlighted fields.</strong>
+                      The case has not been saved yet.
+                    </span>
+                  </div>
+                )}
+                <fieldset className="case-form-section">
+                  <legend>Legal check</legend>
+                  <Controller
+                    control={form.control}
+                    name="researchCheckKey"
+                    render={({ field, fieldState }) => (
+                      <Field
+                        id="legal-case-check"
+                        label="Linked research check"
+                        required
+                        error={fieldState.error?.message}
+                        hint="Only record-found litigation and bankruptcy searches are available."
+                      >
+                        <Select.Root value={field.value} onValueChange={field.onChange}>
+                          <Select.Trigger
+                            id="legal-case-check"
+                            aria-label="Linked research check"
+                            aria-required="true"
+                            aria-invalid={fieldState.invalid || undefined}
+                            aria-describedby={`legal-case-check-hint${fieldState.error ? ' legal-case-check-error' : ''}`}
+                            placeholder="Select a legal check"
+                          />
+                          <Select.Content container={portalContainer ?? undefined}>
+                            {legalChecks.map((check) => (
+                              <Select.Item value={check.key} key={check.key}>
+                                {legalCheckLabel(assignment, check)}
+                              </Select.Item>
+                            ))}
+                          </Select.Content>
+                        </Select.Root>
+                      </Field>
+                    )}
                   />
-                  <SelectField
-                    label="Court level"
-                    name="courtLevel"
-                    values={courtLevels}
-                    form={form}
-                  />
-                  <Field
-                    id="legal-case-court-name"
-                    label="Court name"
-                    required
-                    error={form.formState.errors.courtName?.message}
-                  >
-                    <TextField.Root
-                      {...fieldA11y(
-                        'legal-case-court-name',
-                        form.formState.errors.courtName?.message,
-                        true,
-                      )}
-                      {...form.register('courtName')}
-                    />
-                  </Field>
-                  <Field
-                    id="legal-case-originating-court"
-                    label="Originating court"
-                    error={form.formState.errors.originatingCourt?.message}
-                  >
-                    <TextField.Root
-                      {...fieldA11y(
-                        'legal-case-originating-court',
-                        form.formState.errors.originatingCourt?.message,
-                      )}
-                      {...form.register('originatingCourt')}
-                    />
-                  </Field>
-                  <Field
-                    id="legal-case-registration-date"
-                    label="Registration date"
-                    required
-                    error={form.formState.errors.registrationDate?.message}
-                  >
-                    <TextField.Root
-                      type="date"
-                      {...fieldA11y(
-                        'legal-case-registration-date',
-                        form.formState.errors.registrationDate?.message,
-                        true,
-                      )}
-                      {...form.register('registrationDate')}
-                    />
-                  </Field>
-                </div>
-              </fieldset>
+                </fieldset>
 
-              <fieldset className="case-form-section">
-                <legend>Parties and role</legend>
-                <div className="grid2">
-                  <SelectField
-                    label="Target role"
-                    name="targetRole"
-                    values={legalTargetRoles}
-                    form={form}
-                  />
-                  <span aria-hidden="true" />
-                  <Field
-                    id="legal-case-plaintiffs"
-                    label="Plaintiffs / appellants"
-                    required
-                    error={form.formState.errors.plaintiffs?.message}
-                    hint="Enter one party per line."
-                  >
-                    <TextArea
-                      rows={4}
-                      {...fieldA11y(
-                        'legal-case-plaintiffs',
-                        form.formState.errors.plaintiffs?.message,
-                        true,
-                        true,
-                      )}
-                      {...form.register('plaintiffs')}
-                    />
-                  </Field>
-                  <Field
-                    id="legal-case-defendants"
-                    label="Defendants / appellees"
-                    required
-                    error={form.formState.errors.defendants?.message}
-                    hint="Enter one party per line."
-                  >
-                    <TextArea
-                      rows={4}
-                      {...fieldA11y(
-                        'legal-case-defendants',
-                        form.formState.errors.defendants?.message,
-                        true,
-                        true,
-                      )}
-                      {...form.register('defendants')}
-                    />
-                  </Field>
-                </div>
-              </fieldset>
-
-              <fieldset className="case-form-section">
-                <legend>Case narrative</legend>
-                <div className="grid2">
-                  <Field
-                    id="legal-case-background"
-                    label="Case background"
-                    required
-                    error={form.formState.errors.caseBackground?.message}
-                  >
-                    <TextArea
-                      rows={5}
-                      {...fieldA11y(
-                        'legal-case-background',
-                        form.formState.errors.caseBackground?.message,
-                        true,
-                      )}
-                      {...form.register('caseBackground')}
-                    />
-                  </Field>
-                  <Field
-                    id="legal-case-petition"
-                    label="Petition / claim"
-                    required
-                    error={form.formState.errors.petition?.message}
-                  >
-                    <TextArea
-                      rows={5}
-                      {...fieldA11y(
-                        'legal-case-petition',
-                        form.formState.errors.petition?.message,
-                        true,
-                      )}
-                      {...form.register('petition')}
-                    />
-                  </Field>
-                </div>
-              </fieldset>
-
-              <fieldset className="case-form-section">
-                <legend>Verdict</legend>
-                <div className="grid2">
-                  <Field
-                    id="legal-case-verdict-date"
-                    label="Verdict date"
-                    error={form.formState.errors.verdictDate?.message}
-                  >
-                    <TextField.Root
-                      type="date"
-                      {...fieldA11y(
-                        'legal-case-verdict-date',
-                        form.formState.errors.verdictDate?.message,
-                      )}
-                      {...form.register('verdictDate')}
-                    />
-                  </Field>
-                  <SelectField
-                    label="Verdict status"
-                    name="verdictStatus"
-                    values={verdictStatuses}
-                    form={form}
-                  />
-                  <div className="case-field-wide">
+                <fieldset className="case-form-section">
+                  <legend>Case and court</legend>
+                  <div className="grid2">
                     <Field
-                      id="legal-case-verdict-outcome"
-                      label="Verdict outcome"
+                      id="legal-case-number"
+                      label="Case number"
                       required
-                      error={form.formState.errors.verdictOutcome?.message}
-                      hint="For pending matters, state that no verdict has been issued."
+                      error={form.formState.errors.caseNumber?.message}
+                    >
+                      <TextField.Root
+                        placeholder="e.g. CIV-123/2026"
+                        {...fieldA11y(
+                          'legal-case-number',
+                          form.formState.errors.caseNumber?.message,
+                          true,
+                        )}
+                        {...form.register('caseNumber')}
+                      />
+                    </Field>
+                    <SelectField
+                      label="Classification"
+                      name="classification"
+                      values={legalCaseClassifications}
+                      form={form}
+                      portalContainer={portalContainer}
+                    />
+                    <SelectField
+                      label="Court level"
+                      name="courtLevel"
+                      values={courtLevels}
+                      form={form}
+                      portalContainer={portalContainer}
+                    />
+                    <Field
+                      id="legal-case-court-name"
+                      label="Court name"
+                      required
+                      error={form.formState.errors.courtName?.message}
+                    >
+                      <TextField.Root
+                        {...fieldA11y(
+                          'legal-case-court-name',
+                          form.formState.errors.courtName?.message,
+                          true,
+                        )}
+                        {...form.register('courtName')}
+                      />
+                    </Field>
+                    <Field
+                      id="legal-case-originating-court"
+                      label="Originating court"
+                      error={form.formState.errors.originatingCourt?.message}
+                    >
+                      <TextField.Root
+                        {...fieldA11y(
+                          'legal-case-originating-court',
+                          form.formState.errors.originatingCourt?.message,
+                        )}
+                        {...form.register('originatingCourt')}
+                      />
+                    </Field>
+                    <Field
+                      id="legal-case-registration-date"
+                      label="Registration date"
+                      required
+                      error={form.formState.errors.registrationDate?.message}
+                    >
+                      <TextField.Root
+                        type="date"
+                        {...fieldA11y(
+                          'legal-case-registration-date',
+                          form.formState.errors.registrationDate?.message,
+                          true,
+                        )}
+                        {...form.register('registrationDate')}
+                      />
+                    </Field>
+                  </div>
+                </fieldset>
+
+                <fieldset className="case-form-section">
+                  <legend>Parties and role</legend>
+                  <div className="grid2">
+                    <SelectField
+                      label="Target role"
+                      name="targetRole"
+                      values={legalTargetRoles}
+                      form={form}
+                      portalContainer={portalContainer}
+                    />
+                    <span aria-hidden="true" />
+                    <Field
+                      id="legal-case-plaintiffs"
+                      label="Plaintiffs / appellants"
+                      required
+                      error={form.formState.errors.plaintiffs?.message}
+                      hint="Enter one party per line."
                     >
                       <TextArea
                         rows={4}
                         {...fieldA11y(
-                          'legal-case-verdict-outcome',
-                          form.formState.errors.verdictOutcome?.message,
+                          'legal-case-plaintiffs',
+                          form.formState.errors.plaintiffs?.message,
                           true,
                           true,
                         )}
-                        {...form.register('verdictOutcome')}
+                        {...form.register('plaintiffs')}
                       />
                     </Field>
-                  </div>
-                  <div className="case-field-wide">
                     <Field
-                      id="legal-case-related-cases"
-                      label="Related cases"
-                      error={form.formState.errors.relatedCases?.message}
+                      id="legal-case-defendants"
+                      label="Defendants / appellees"
+                      required
+                      error={form.formState.errors.defendants?.message}
+                      hint="Enter one party per line."
                     >
                       <TextArea
-                        rows={3}
-                        placeholder="Enter related case numbers, one per line"
+                        rows={4}
                         {...fieldA11y(
-                          'legal-case-related-cases',
-                          form.formState.errors.relatedCases?.message,
-                        )}
-                        {...form.register('relatedCases')}
-                      />
-                    </Field>
-                  </div>
-                </div>
-              </fieldset>
-
-              <fieldset className="case-form-section">
-                <legend>Source and documents</legend>
-                <div className="grid2">
-                  <div className="case-field-wide">
-                    <Field
-                      id="legal-case-source-url"
-                      label="Source URL"
-                      required
-                      error={form.formState.errors.sourceUrl?.message}
-                    >
-                      <TextField.Root
-                        type="url"
-                        {...fieldA11y(
-                          'legal-case-source-url',
-                          form.formState.errors.sourceUrl?.message,
+                          'legal-case-defendants',
+                          form.formState.errors.defendants?.message,
+                          true,
                           true,
                         )}
-                        {...form.register('sourceUrl')}
+                        {...form.register('defendants')}
                       />
                     </Field>
                   </div>
-                  <Field
-                    id="legal-case-original-document"
-                    label="Original source document"
-                    required
-                    error={form.formState.errors.originalSourceDocument?.message}
-                    hint="PNG, JPG, or PDF"
-                  >
-                    <input
-                      {...fieldA11y(
-                        'legal-case-original-document',
-                        form.formState.errors.originalSourceDocument?.message,
-                        true,
-                        true,
-                      )}
-                      className="file"
-                      type="file"
-                      accept="image/png,image/jpeg,.pdf"
-                      onChange={(event) =>
-                        form.setValue(
-                          'originalSourceDocument',
-                          event.target.files?.[0]?.name ?? '',
-                          { shouldDirty: true, shouldValidate: true },
-                        )
-                      }
-                    />
-                  </Field>
-                  <Field
-                    id="legal-case-translated-document"
-                    label="English translated document"
-                    error={form.formState.errors.englishTranslatedDocument?.message}
-                    hint="Optional · PNG, JPG, or PDF"
-                  >
-                    <input
-                      {...fieldA11y(
-                        'legal-case-translated-document',
-                        form.formState.errors.englishTranslatedDocument?.message,
-                        false,
-                        true,
-                      )}
-                      className="file"
-                      type="file"
-                      accept="image/png,image/jpeg,.pdf"
-                      onChange={(event) =>
-                        form.setValue(
-                          'englishTranslatedDocument',
-                          event.target.files?.[0]?.name ?? '',
-                          { shouldDirty: true },
-                        )
-                      }
-                    />
-                  </Field>
-                </div>
-              </fieldset>
+                </fieldset>
 
-              {mutation.isError && (
-                <Text color="red" role="alert">
-                  {mutation.error instanceof Error
-                    ? mutation.error.message
-                    : 'The legal case could not be saved.'}
-                </Text>
-              )}
+                <fieldset className="case-form-section">
+                  <legend>Case narrative</legend>
+                  <div className="grid2">
+                    <Field
+                      id="legal-case-background"
+                      label="Case background"
+                      required
+                      error={form.formState.errors.caseBackground?.message}
+                    >
+                      <TextArea
+                        rows={5}
+                        {...fieldA11y(
+                          'legal-case-background',
+                          form.formState.errors.caseBackground?.message,
+                          true,
+                        )}
+                        {...form.register('caseBackground')}
+                      />
+                    </Field>
+                    <Field
+                      id="legal-case-petition"
+                      label="Petition / claim"
+                      required
+                      error={form.formState.errors.petition?.message}
+                    >
+                      <TextArea
+                        rows={5}
+                        {...fieldA11y(
+                          'legal-case-petition',
+                          form.formState.errors.petition?.message,
+                          true,
+                        )}
+                        {...form.register('petition')}
+                      />
+                    </Field>
+                  </div>
+                </fieldset>
 
-              <div className="formactions">
-                <Dialog.Close asChild>
-                  <Button type="button" variant="soft">
-                    Cancel
+                <fieldset className="case-form-section">
+                  <legend>Verdict</legend>
+                  <div className="grid2">
+                    <Field
+                      id="legal-case-verdict-date"
+                      label="Verdict date"
+                      error={form.formState.errors.verdictDate?.message}
+                    >
+                      <TextField.Root
+                        type="date"
+                        {...fieldA11y(
+                          'legal-case-verdict-date',
+                          form.formState.errors.verdictDate?.message,
+                        )}
+                        {...form.register('verdictDate')}
+                      />
+                    </Field>
+                    <SelectField
+                      label="Verdict status"
+                      name="verdictStatus"
+                      values={verdictStatuses}
+                      form={form}
+                      portalContainer={portalContainer}
+                    />
+                    <div className="case-field-wide">
+                      <Field
+                        id="legal-case-verdict-outcome"
+                        label="Verdict outcome"
+                        required
+                        error={form.formState.errors.verdictOutcome?.message}
+                        hint="For pending matters, state that no verdict has been issued."
+                      >
+                        <TextArea
+                          rows={4}
+                          {...fieldA11y(
+                            'legal-case-verdict-outcome',
+                            form.formState.errors.verdictOutcome?.message,
+                            true,
+                            true,
+                          )}
+                          {...form.register('verdictOutcome')}
+                        />
+                      </Field>
+                    </div>
+                    <div className="case-field-wide">
+                      <Field
+                        id="legal-case-related-cases"
+                        label="Related cases"
+                        error={form.formState.errors.relatedCases?.message}
+                      >
+                        <TextArea
+                          rows={3}
+                          placeholder="Enter related case numbers, one per line"
+                          {...fieldA11y(
+                            'legal-case-related-cases',
+                            form.formState.errors.relatedCases?.message,
+                          )}
+                          {...form.register('relatedCases')}
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                </fieldset>
+
+                <fieldset className="case-form-section">
+                  <legend>Source and documents</legend>
+                  <div className="grid2">
+                    <div className="case-field-wide">
+                      <Field
+                        id="legal-case-source-url"
+                        label="Source URL"
+                        required
+                        error={form.formState.errors.sourceUrl?.message}
+                      >
+                        <TextField.Root
+                          type="url"
+                          {...fieldA11y(
+                            'legal-case-source-url',
+                            form.formState.errors.sourceUrl?.message,
+                            true,
+                          )}
+                          {...form.register('sourceUrl')}
+                        />
+                      </Field>
+                    </div>
+                    <Field
+                      id="legal-case-original-document"
+                      label="Original source document"
+                      required
+                      error={form.formState.errors.originalSourceDocument?.message}
+                      hint="PNG, JPG, or PDF"
+                    >
+                      <input
+                        {...fieldA11y(
+                          'legal-case-original-document',
+                          form.formState.errors.originalSourceDocument?.message,
+                          true,
+                          true,
+                        )}
+                        className="file"
+                        type="file"
+                        accept="image/png,image/jpeg,.pdf"
+                        onChange={(event) =>
+                          form.setValue(
+                            'originalSourceDocument',
+                            event.target.files?.[0]?.name ?? '',
+                            { shouldDirty: true, shouldValidate: true },
+                          )
+                        }
+                      />
+                    </Field>
+                    <Field
+                      id="legal-case-translated-document"
+                      label="English translated document"
+                      error={form.formState.errors.englishTranslatedDocument?.message}
+                      hint="Optional · PNG, JPG, or PDF"
+                    >
+                      <input
+                        {...fieldA11y(
+                          'legal-case-translated-document',
+                          form.formState.errors.englishTranslatedDocument?.message,
+                          false,
+                          true,
+                        )}
+                        className="file"
+                        type="file"
+                        accept="image/png,image/jpeg,.pdf"
+                        onChange={(event) =>
+                          form.setValue(
+                            'englishTranslatedDocument',
+                            event.target.files?.[0]?.name ?? '',
+                            { shouldDirty: true },
+                          )
+                        }
+                      />
+                    </Field>
+                  </div>
+                </fieldset>
+
+                {mutation.isError && (
+                  <Text color="red" role="alert">
+                    {mutation.error instanceof Error
+                      ? mutation.error.message
+                      : 'The legal case could not be saved.'}
+                  </Text>
+                )}
+
+                <div className="formactions">
+                  <Dialog.Close asChild>
+                    <Button type="button" variant="soft">
+                      Cancel
+                    </Button>
+                  </Dialog.Close>
+                  <Button type="submit" disabled={mutation.isPending}>
+                    {mutation.isPending ? 'Saving case…' : 'Save legal case'}
                   </Button>
-                </Dialog.Close>
-                <Button type="submit" disabled={mutation.isPending}>
-                  {mutation.isPending ? 'Saving case…' : 'Save legal case'}
-                </Button>
-              </div>
-            </form>
-          </Dialog.Content>
+                </div>
+              </form>
+            </Dialog.Content>
+          </Theme>
         </Dialog.Portal>
       </Dialog.Root>
     </>
@@ -627,11 +638,13 @@ function SelectField({
   name,
   values,
   form,
+  portalContainer,
 }: {
   label: string
   name: SelectFieldName
   values: readonly string[]
   form: UseFormReturn<LegalCaseInput>
+  portalContainer: HTMLDivElement | null
 }) {
   const controlId = `legal-case-${name}`
   return (
@@ -639,20 +652,16 @@ function SelectField({
       control={form.control}
       name={name}
       render={({ field, fieldState }) => (
-        <div className="field">
-          <span id={`${controlId}-label`}>
-            {label}
-            <em aria-hidden="true"> *</em>
-          </span>
+        <Field id={controlId} label={label} required error={fieldState.error?.message}>
           <Select.Root value={field.value} onValueChange={field.onChange}>
             <Select.Trigger
               id={controlId}
-              aria-labelledby={`${controlId}-label`}
+              aria-label={label}
               aria-required="true"
               aria-invalid={fieldState.invalid || undefined}
               aria-describedby={fieldState.error ? `${controlId}-error` : undefined}
             />
-            <Select.Content>
+            <Select.Content container={portalContainer ?? undefined}>
               {values.map((value) => (
                 <Select.Item value={value} key={value}>
                   {legalCaseLabel(value)}
@@ -660,12 +669,7 @@ function SelectField({
               ))}
             </Select.Content>
           </Select.Root>
-          {fieldState.error && (
-            <small className="error" id={`${controlId}-error`} role="alert">
-              {fieldState.error.message}
-            </small>
-          )}
-        </div>
+        </Field>
       )}
     />
   )

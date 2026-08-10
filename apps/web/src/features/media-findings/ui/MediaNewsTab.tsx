@@ -41,11 +41,22 @@ export function MediaNewsTab({
               Structured findings linked to recorded media searches.
             </Text>
           </div>
-          {canEdit && mediaChecks.length > 0 && (
-            <Button onClick={openFindingForm}>
-              <Plus />
-              Add media finding
-            </Button>
+          {canEdit && mediaCategoryConfigured && (
+            <div className="actions">
+              <Button
+                variant="soft"
+                onClick={() => onAddEvidence(preferredMediaEvidencePreset(assignment))}
+              >
+                <Plus />
+                Add evidence
+              </Button>
+              {mediaChecks.length > 0 && (
+                <Button onClick={openFindingForm}>
+                  <Plus />
+                  Add media finding
+                </Button>
+              )}
+            </div>
           )}
         </div>
 
@@ -65,12 +76,6 @@ export function MediaNewsTab({
               Add record-found evidence for a positive/neutral or negative media check before
               creating a structured finding.
             </Text>
-            {canEdit && (
-              <Button onClick={() => onAddEvidence(preferredMediaEvidencePreset(assignment))}>
-                <Plus />
-                Add media evidence
-              </Button>
-            )}
           </div>
         ) : (
           <div className="media-sections">

@@ -95,17 +95,196 @@ const seed: Assignment[] = [
     cases: [],
     media: [],
   },
+  {
+    id: 'demo-complete',
+    referenceId: 'CTR-2026-015',
+    status: 'READY_TO_SUBMIT',
+    createdAt: '2026-08-10',
+    nameEnglish: 'Aurora Pacific Logistics Co., Ltd.',
+    nameThai: 'บริษัท ออโรร่า แปซิฟิก โลจิสติกส์ จำกัด',
+    registrationNumber: '0105569123457',
+    incorporationDate: '2019-03-18',
+    formerNames: [
+      { language: 'EN', name: 'Aurora Freight Solutions Co., Ltd.' },
+      { language: 'TH', name: 'บริษัท ออโรร่า เฟรท โซลูชั่นส์ จำกัด' },
+    ],
+    addressEnglish: '99/12 Example Tower, Sathorn Road, Bangkok 10120, Thailand',
+    addressThai: '99/12 อาคารตัวอย่าง ถนนสาทร กรุงเทพมหานคร 10120',
+    website: 'https://example.com/aurora-logistics',
+    registeredCapital: '100000000',
+    paidUpCapital: '100000000',
+    currency: 'THB',
+    businessEnglish: 'International freight forwarding, warehousing, and logistics consulting',
+    businessThai: 'บริการขนส่งสินค้าระหว่างประเทศ คลังสินค้า และที่ปรึกษาด้านโลจิสติกส์',
+    clientName: 'Northstar Advisory (Thailand)',
+    dueDate: '2026-08-20',
+    researchFrom: '2016-08-10',
+    researchTo: '2026-08-10',
+    categories: ['LITIGATION', 'BANKRUPTCY', 'MEDIA_POSITIVE_NEUTRAL', 'MEDIA_NEGATIVE'],
+    parties: [
+      {
+        partyType: 'INDIVIDUAL',
+        nameEnglish: 'Pimchanok Rattanakul',
+        nameThai: 'พิมพ์ชนก รัตนกุล',
+        identificationNumber: '1103700123456',
+        dateOfBirth: '1982-11-09',
+        ownershipPercentage: '',
+        relationshipNote: 'Managing director and authorised signatory',
+      },
+      {
+        partyType: 'COMPANY',
+        nameEnglish: 'Aurora Holdings (Thailand) Co., Ltd.',
+        nameThai: 'บริษัท ออโรร่า โฮลดิ้งส์ (ประเทศไทย) จำกัด',
+        identificationNumber: '0105567123499',
+        dateOfBirth: '',
+        ownershipPercentage: '75',
+        relationshipNote: 'Major shareholder and ultimate parent',
+      },
+    ],
+    targets: [
+      {
+        id: 'mock-subject',
+        targetType: 'SUBJECT_COMPANY',
+        nameEnglish: 'Aurora Pacific Logistics Co., Ltd.',
+        nameThai: 'บริษัท ออโรร่า แปซิฟิก โลจิสติกส์ จำกัด',
+        identificationNumber: '0105569123457',
+      },
+      {
+        id: 'mock-director',
+        targetType: 'DIRECTOR',
+        nameEnglish: 'Pimchanok Rattanakul',
+        nameThai: 'พิมพ์ชนก รัตนกุล',
+        identificationNumber: '1103700123456',
+      },
+      {
+        id: 'mock-parent',
+        targetType: 'ULTIMATE_PARENT',
+        nameEnglish: 'Aurora Holdings (Thailand) Co., Ltd.',
+        nameThai: 'บริษัท ออโรร่า โฮลดิ้งส์ (ประเทศไทย) จำกัด',
+        identificationNumber: '0105567123499',
+        ownershipPercentage: '75',
+      },
+    ],
+    attempts: createCompleteMockAttempts(),
+    cases: [
+      {
+        id: 'mock-case-1',
+        researchCheckKey: 'mock-subject:LITIGATION',
+        targetId: 'mock-subject',
+        category: 'LITIGATION',
+        caseNumber: 'Civil Case No. B.E. 2567/1842',
+        classification: 'CIVIL',
+        courtLevel: 'FIRST_INSTANCE',
+        courtName: 'Bangkok South Civil Court',
+        originatingCourt: '',
+        registrationDate: '2024-04-22',
+        targetRole: 'DEFENDANT',
+        plaintiffs: 'Example Commercial Bank Public Company Limited',
+        defendants: 'Aurora Pacific Logistics Co., Ltd.',
+        caseBackground: 'A fictional contractual dispute concerning logistics service fees.',
+        petition: 'The plaintiff claims THB 2,450,000 plus contractual interest and costs.',
+        verdictDate: '2025-01-17',
+        verdictStatus: 'FINAL',
+        verdictOutcome: 'The parties reached a settlement and the court dismissed the case.',
+        relatedCases: 'None identified',
+        sourceUrl: 'https://example.com/court/mock-case-2567-1842',
+        originalSourceDocument: 'mock-court-record-th.pdf',
+        englishTranslatedDocument: 'mock-court-record-en.pdf',
+        createdAt: '2026-08-10T03:15:00.000Z',
+      },
+    ],
+    media: [
+      {
+        id: 'mock-media-1',
+        researchCheckKey: 'mock-subject:MEDIA_NEGATIVE',
+        targetId: 'mock-subject',
+        category: 'MEDIA_NEGATIVE',
+        articleTitle: 'Logistics operator responds to fictional delivery-delay complaints',
+        publisher: 'Bangkok Business Example',
+        publishedAt: '2025-09-14',
+        sentiment: 'NEGATIVE',
+        summaryOriginal:
+          'บทความตัวอย่างกล่าวถึงข้อร้องเรียนเรื่องความล่าช้าในการจัดส่ง โดยบริษัทชี้แจงว่าเกิดจากเหตุขัดข้องชั่วคราว',
+        summaryEnglish:
+          'The fictional article reports delivery-delay complaints. The company attributed them to a temporary operational disruption and stated that remediation was completed.',
+        sourceUrl: 'https://example.com/news/aurora-delivery-delay',
+        supportingDocument: 'mock-negative-media-article.pdf',
+        createdAt: '2026-08-10T03:20:00.000Z',
+      },
+    ],
+  },
 ]
 function load() {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(KEY) || 'null')
     if (!Array.isArray(parsed)) return seed
-    return parsed
+    const stored = parsed
       .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
       .map(normalizeAssignment)
+    const missingDemoAssignments = seed.filter(
+      (demo) => !stored.some((assignment) => assignment.id === demo.id),
+    )
+    return [...stored, ...missingDemoAssignments]
   } catch {
     return seed
   }
+}
+
+function createCompleteMockAttempts(): SearchAttempt[] {
+  const targets = [
+    {
+      id: 'mock-subject',
+      en: 'Aurora Pacific Logistics Co., Ltd.',
+      th: 'บริษัท ออโรร่า แปซิฟิก โลจิสติกส์ จำกัด',
+    },
+    { id: 'mock-director', en: 'Pimchanok Rattanakul', th: 'พิมพ์ชนก รัตนกุล' },
+    {
+      id: 'mock-parent',
+      en: 'Aurora Holdings (Thailand) Co., Ltd.',
+      th: 'บริษัท ออโรร่า โฮลดิ้งส์ (ประเทศไทย) จำกัด',
+    },
+  ]
+  const categories: SearchCategory[] = [
+    'LITIGATION',
+    'BANKRUPTCY',
+    'MEDIA_POSITIVE_NEUTRAL',
+    'MEDIA_NEGATIVE',
+  ]
+  let index = 0
+  return targets.flatMap((target) =>
+    categories.flatMap((category) =>
+      (['EN', 'TH'] as const).map((searchLanguage) => {
+        index += 1
+        const isLegalMatch =
+          target.id === 'mock-subject' && category === 'LITIGATION' && searchLanguage === 'EN'
+        const isMediaMatch =
+          target.id === 'mock-subject' && category === 'MEDIA_NEGATIVE' && searchLanguage === 'EN'
+        const result: SearchResult = isLegalMatch || isMediaMatch ? 'RECORD_FOUND' : 'NO_RESULT'
+        const query = searchLanguage === 'EN' ? target.en : target.th
+        return {
+          id: `mock-attempt-${index}`,
+          targetId: target.id,
+          category,
+          sourceName: category.startsWith('MEDIA')
+            ? 'Example News Archive'
+            : 'Example Public Records Portal',
+          sourceUrl:
+            result === 'RECORD_FOUND' ? `https://example.com/source/mock-result-${index}` : '',
+          resultPageUrl:
+            result === 'NO_RESULT' ? `https://example.com/search/mock-no-result-${index}` : '',
+          searchQuery: `\"${query}\"`,
+          searchLanguage,
+          searchedAt: '2026-08-10',
+          result,
+          reason: '',
+          evidence: [`mock-search-${index}.png`],
+          notesOriginal: searchLanguage === 'TH' ? `ผลการค้นหาตัวอย่างสำหรับ ${query}` : '',
+          translationEnglish: searchLanguage === 'TH' ? `Mock search result for ${target.en}` : '',
+          createdAt: `2026-08-10T02:${String(index).padStart(2, '0')}:00.000Z`,
+        }
+      }),
+    ),
+  )
 }
 
 function normalizeAssignment(value: Record<string, unknown>): Assignment {

@@ -96,9 +96,16 @@ nav > a:last-child {
   display: flex;
   gap: 10px;
   align-items: center;
+  color: #252536;
+  text-decoration: none;
+  padding: 0;
+  border-radius: 8px;
   font-weight: 750;
   font-size: 17px;
   margin: 0 8px 28px;
+}
+.brand:hover {
+  color: #252536;
 }
 .brand small {
   display: block;
@@ -270,6 +277,11 @@ td strong {
   gap: 7px;
   font-size: 13px;
   font-weight: 600;
+}
+/* Radix renders select menus in a portal outside the dialog. Keep the popper
+   above our custom dialog/overlay stacking layer so it remains visible and interactive. */
+[data-radix-popper-content-wrapper]:has(.rt-SelectContent) {
+  z-index: 30 !important;
 }
 .field em {
   color: #c0342b;

@@ -44,7 +44,7 @@ describe('MediaNewsTab', () => {
     renderTab(assignment, onAddEvidence)
 
     expect(screen.getByRole('heading', { name: 'Record a media match first' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Add media evidence' }))
+    await user.click(screen.getByRole('button', { name: 'Add evidence' }))
 
     expect(onAddEvidence).toHaveBeenCalledWith({
       targetId: 'subject-1',
@@ -79,7 +79,14 @@ describe('MediaNewsTab', () => {
       ],
     } as Assignment
 
-    renderTab(matchedAssignment)
+    const onAddEvidence = vi.fn()
+    renderTab(matchedAssignment, onAddEvidence)
+    await user.click(screen.getByRole('button', { name: 'Add evidence' }))
+    expect(onAddEvidence).toHaveBeenCalledWith({
+      targetId: 'subject-1',
+      category: 'MEDIA_NEGATIVE',
+      result: 'RECORD_FOUND',
+    })
     await user.click(screen.getByRole('button', { name: 'Add media finding' }))
     await user.type(screen.getByLabelText(/Article title/), 'Example investigation')
     await user.type(screen.getByLabelText(/Publisher/), 'Example News')

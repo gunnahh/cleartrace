@@ -32,14 +32,14 @@ const CollapsedTooltip = ({
 
 const Nav = ({ close, collapsed = false }: { close?: () => void; collapsed?: boolean }) => (
   <nav aria-label="Primary">
-    <div className="brand">
+    <Link className="brand" to="/" onClick={close} aria-label="ClearTrace home">
       <span className="brandmark">
         <Search size={18} />
       </span>
       <span className="brand-label">
         ClearTrace<small>Research workspace</small>
       </span>
-    </div>
+    </Link>
     <CollapsedTooltip collapsed={collapsed} label="Assignments">
       <Link
         aria-label="Assignments"
