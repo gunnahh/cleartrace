@@ -1,0 +1,326 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as Dialog from '@radix-ui/react-dialog'
+import { Button, Select, Text, TextArea, TextField } from '@radix-ui/themes'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { X } from 'lucide-react'
+import { Controller, useForm, useWatch, type UseFormReturn } from 'react-hook-form'
+import { Field } from '../../../components/Field'
+import {
+  mediaFindingFormSchema,
+  mediaFindingLabel,
+  type MediaFindingInput,
+} from '../../../entities/media-finding'
+import { api, assignmentKeys } from '../../../lib/api'
+import type { Assignment } from '../../assignments/model'
+import {
+  mediaCheckLabel,
+  mediaFindingDefaultsForCheck,
+  type MediaCheckMatch,
+} from '../model/media-checks'
+
+export function MediaFindingDialog({
+  assignment,
+  mediaChecks,
+  onOpenChange,
+  onSaved,
+}: {
+  assignment: Assignment
+  mediaChecks: MediaCheckMatch[]
+  onOpenChange: (open: boolean) => void
+  onSaved: () => void
+}) {
+  const queryClient = useQueryClient()
+  const form = useForm<MediaFindingInput>({
+    resolver: zodResolver(mediaFindingFormSchema),
+    defaultValues: mediaFindingDefaultsForCheck(mediaChecks[0]),
+  })
+  const mutation = useMutation({
+    mutationFn: (input: MediaFindingInput) => api.addMediaFinding(assignment.id, input),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: assignmentKeys.detail(assignment.id),
+          exact: true,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: assignmentKeys.report(assignment.id),
+          exact: true,
+        }),
+      ])
+      onSaved()
+      onOpenChange(false)
+    },
+  })
+  const selectedResearchCheckKey = useWatch({
+    control: form.control,
+    name: 'researchCheckKey',
+  })
+  const selectedCheck = mediaChecks.find((check) => check.key === selectedResearchCheckKey)
+
+  return (
+    <Dialog.Root open onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="overlay" />
+        <Dialog.Content className="dialog media-dialog">
+          <div className="sectionhead">
+            <div>
+              <Dialog.Title>Add media finding</Dialog.Title>
+              <Dialog.Description>
+                Capture the article, summaries, source, and supporting document.
+              </Dialog.Description>
+            </div>
+            <Dialog.Close asChild>
+              <Button variant="ghost" aria-label="Close media finding form">
+                <X />
+              </Button>
+            </Dialog.Close>
+          </div>
+
+          <form onSubmit={form.handleSubmit((input) => mutation.mutate(input))} noValidate>
+            {form.formState.submitCount > 0 && !form.formState.isValid && (
+              <div className="errorsummary" role="alert">
+                <span>
+                  <strong>Review the highlighted fields.</strong>
+                  The finding has not been saved yet.
+                </span>
+              </div>
+            )}
+
+            <fieldset>
+              <legend>Linked media check</legend>
+              <Controller
+                control={form.control}
+                name="researchCheckKey"
+                render={({ field, fieldState }) => (
+                  <div className="field">
+                    <span id="media-check-label">
+                      Record-found media search
+                      <em aria-hidden="true"> *</em>
+                    </span>
+                    <Select.Root
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value)
+                        const check = mediaChecks.find((item) => item.key === value)
+                        form.setValue(
+                          'sentiment',
+                          check?.category === 'MEDIA_NEGATIVE' ? 'NEGATIVE' : 'NEUTRAL',
+                          { shouldValidate: true },
+                        )
+                      }}
+                    >
+                      <Select.Trigger
+                        id="media-check"
+                        aria-labelledby="media-check-label"
+                        aria-required="true"
+                        aria-invalid={fieldState.invalid || undefined}
+                        aria-describedby={fieldState.error ? 'media-check-error' : undefined}
+                        placeholder="Select a media check"
+                      />
+                      <Select.Content>
+                        {mediaChecks.map((check) => (
+                          <Select.Item value={check.key} key={check.key}>
+                            {mediaCheckLabel(assignment, check)}
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Root>
+                    {fieldState.error && (
+                      <small className="error" id="media-check-error" role="alert">
+                        {fieldState.error.message}
+                      </small>
+                    )}
+                  </div>
+                )}
+              />
+            </fieldset>
+
+            <fieldset>
+              <legend>Article details</legend>
+              <div className="grid2">
+                <div className="case-field-wide">
+                  <MediaTextField form={form} name="articleTitle" label="Article title" required />
+                </div>
+                <MediaTextField form={form} name="publisher" label="Publisher" required />
+                <MediaTextField
+                  form={form}
+                  name="publishedAt"
+                  label="Publication date"
+                  type="date"
+                  required
+                />
+                <Controller
+                  control={form.control}
+                  name="sentiment"
+                  render={({ field, fieldState }) => (
+                    <div className="field">
+                      <span id="media-sentiment-label">
+                        Sentiment
+                        <em aria-hidden="true"> *</em>
+                      </span>
+                      <Select.Root value={field.value} onValueChange={field.onChange}>
+                        <Select.Trigger
+                          id="media-sentiment"
+                          aria-labelledby="media-sentiment-label"
+                          aria-required="true"
+                          aria-invalid={fieldState.invalid || undefined}
+                          aria-describedby={fieldState.error ? 'media-sentiment-error' : undefined}
+                        />
+                        <Select.Content>
+                          {(selectedCheck?.category === 'MEDIA_NEGATIVE'
+                            ? ['NEGATIVE']
+                            : ['POSITIVE', 'NEUTRAL']
+                          ).map((sentiment) => (
+                            <Select.Item value={sentiment} key={sentiment}>
+                              {mediaFindingLabel(sentiment)}
+                            </Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Root>
+                      {fieldState.error && (
+                        <small className="error" id="media-sentiment-error" role="alert">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+                    </div>
+                  )}
+                />
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Research summaries</legend>
+              <div className="grid2">
+                <MediaTextArea
+                  form={form}
+                  name="summaryOriginal"
+                  label="Original-language summary"
+                />
+                <MediaTextArea form={form} name="summaryEnglish" label="English summary" />
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Source and evidence</legend>
+              <div className="grid2">
+                <div className="case-field-wide">
+                  <MediaTextField
+                    form={form}
+                    name="sourceUrl"
+                    label="Source URL"
+                    type="url"
+                    required
+                  />
+                </div>
+                <div className="case-field-wide">
+                  <Field
+                    id="media-supporting-document"
+                    label="Supporting screenshot or document"
+                    required
+                    error={form.formState.errors.supportingDocument?.message}
+                    hint="PNG, JPG, or PDF"
+                  >
+                    <input
+                      id="media-supporting-document"
+                      className="file"
+                      type="file"
+                      accept="image/png,image/jpeg,.pdf"
+                      aria-required="true"
+                      aria-invalid={form.formState.errors.supportingDocument ? true : undefined}
+                      aria-describedby={`media-supporting-document-hint${
+                        form.formState.errors.supportingDocument
+                          ? ' media-supporting-document-error'
+                          : ''
+                      }`}
+                      onChange={(event) =>
+                        form.setValue('supportingDocument', event.target.files?.[0]?.name ?? '', {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        })
+                      }
+                    />
+                  </Field>
+                </div>
+              </div>
+            </fieldset>
+
+            {mutation.isError && (
+              <Text color="red" role="alert">
+                {mutation.error instanceof Error
+                  ? mutation.error.message
+                  : 'The media finding could not be saved.'}
+              </Text>
+            )}
+
+            <div className="formactions">
+              <Dialog.Close asChild>
+                <Button type="button" variant="soft">
+                  Cancel
+                </Button>
+              </Dialog.Close>
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending ? 'Saving finding…' : 'Save media finding'}
+              </Button>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  )
+}
+
+type MediaTextName = 'articleTitle' | 'publisher' | 'publishedAt' | 'sourceUrl'
+
+function MediaTextField({
+  form,
+  name,
+  label,
+  type = 'text',
+  required = false,
+}: {
+  form: UseFormReturn<MediaFindingInput>
+  name: MediaTextName
+  label: string
+  type?: 'text' | 'date' | 'url'
+  required?: boolean
+}) {
+  const id = `media-${name}`
+  const error = form.formState.errors[name]?.message
+  return (
+    <Field id={id} label={label} required={required} error={error}>
+      <TextField.Root
+        type={type}
+        id={id}
+        aria-required={required || undefined}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
+        {...form.register(name)}
+      />
+    </Field>
+  )
+}
+
+function MediaTextArea({
+  form,
+  name,
+  label,
+}: {
+  form: UseFormReturn<MediaFindingInput>
+  name: 'summaryOriginal' | 'summaryEnglish'
+  label: string
+}) {
+  const id = `media-${name}`
+  const error = form.formState.errors[name]?.message
+  return (
+    <Field id={id} label={label} required error={error}>
+      <TextArea
+        rows={5}
+        id={id}
+        aria-required="true"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
+        {...form.register(name)}
+      />
+    </Field>
+  )
+}

@@ -14,7 +14,7 @@ The API owns persistence and business rules. Shared contracts prevent request DT
 ### Frontend boundaries
 
 - `src/routes` mirrors URLs and contains only routing concerns: search/parameter validation, redirects, guards, loaders, and thin feature composition.
-- `src/entities/<domain>` contains stable business models and validation shared by more than one capability, such as the legal-case model used by assignments and reports.
+- `src/entities/<domain>` contains stable business models and validation shared by more than one capability, including legal cases, search attempts, and media findings.
 - `src/features/<capability>` contains user-facing capabilities and exposes a public API. A feature is not synonymous with a page.
 - `src/components` contains reusable, domain-agnostic UI and application layouts.
 - `src/lib` contains cross-feature infrastructure such as HTTP and query adapters.

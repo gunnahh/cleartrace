@@ -31,9 +31,11 @@ type LegalCheckMatch = {
 
 export function CaseDetailsTab({
   assignment,
+  onAddLegalEvidence,
   onReviewLegalMatches,
 }: {
   assignment: Assignment
+  onAddLegalEvidence?: () => void
   onReviewLegalMatches: () => void
 }) {
   const [open, setOpen] = useState(false)
@@ -90,10 +92,18 @@ export function CaseDetailsTab({
             </Text>
           </div>
           {assignment.status !== 'SUBMITTED' && legalChecks.length > 0 && (
-            <Button onClick={openCaseForm}>
-              <Plus />
-              Add legal case
-            </Button>
+            <div className="actions">
+              {onAddLegalEvidence && (
+                <Button variant="soft" onClick={onAddLegalEvidence}>
+                  <Plus />
+                  Add evidence
+                </Button>
+              )}
+              <Button onClick={openCaseForm}>
+                <Plus />
+                Add legal case
+              </Button>
+            </div>
           )}
         </div>
 
@@ -151,6 +161,22 @@ export function CaseDetailsTab({
                     <Text size="2">{legalCase.verdictOutcome}</Text>
                   </div>
 
+                  <div className="case-documents">
+                    <Text size="1" weight="bold" color="gray">
+                      Supporting documents
+                    </Text>
+                    <span>
+                      <FileText aria-hidden="true" />
+                      {legalCase.originalSourceDocument || 'Original document not recorded'}
+                    </span>
+                    {legalCase.englishTranslatedDocument && (
+                      <span>
+                        <FileText aria-hidden="true" />
+                        {legalCase.englishTranslatedDocument}
+                      </span>
+                    )}
+                  </div>
+
                   {isHttpUrl(legalCase.sourceUrl) && (
                     <a href={legalCase.sourceUrl} target="_blank" rel="noreferrer">
                       View recorded source <ExternalLink aria-hidden="true" />
@@ -169,9 +195,17 @@ export function CaseDetailsTab({
               structured case.
             </Text>
             {assignment.status !== 'SUBMITTED' && (
-              <Button variant="soft" onClick={onReviewLegalMatches}>
-                Review legal matches
-              </Button>
+              <div className="case-empty-actions">
+                {onAddLegalEvidence && (
+                  <Button onClick={onAddLegalEvidence}>
+                    <Plus />
+                    Add legal evidence
+                  </Button>
+                )}
+                <Button variant="soft" onClick={onReviewLegalMatches}>
+                  Review legal matches
+                </Button>
+              </div>
             )}
           </div>
         ) : (

@@ -1,5 +1,18 @@
 import { z } from 'zod'
 import { createResearchCheckKey, type LegalCase } from '../../entities/legal-case'
+import {
+  createMediaResearchCheckKey,
+  mediaFindingFormSchema,
+  type MediaFinding,
+  type MediaResearchCategory,
+} from '../../entities/media-finding'
+import {
+  searchCategories,
+  searchEvidenceSchema,
+  type SearchAttempt as SearchAttemptEntity,
+  type SearchCategory,
+  type SearchEvidenceInput,
+} from '../../entities/search-attempt'
 
 // Backend target types
 export const targetTypes = [
@@ -14,13 +27,8 @@ export const targetTypes = [
 export const partyTypes = ['COMPANY', 'INDIVIDUAL', 'SUBSIDIARY', 'OTHER'] as const
 export type PartyType = (typeof partyTypes)[number]
 
-export const categories = [
-  'LITIGATION',
-  'BANKRUPTCY',
-  'MEDIA_POSITIVE_NEUTRAL',
-  'MEDIA_NEGATIVE',
-] as const
-export type Category = (typeof categories)[number]
+export const categories = searchCategories
+export type Category = SearchCategory
 export type AssignmentStatus = 'DRAFT' | 'IN_PROGRESS' | 'READY_TO_SUBMIT' | 'SUBMITTED'
 
 // Map UI party types to backend target types
@@ -92,20 +100,7 @@ export const assignmentSchema = z
   })
 export type AssignmentInput = z.infer<typeof assignmentSchema>
 
-export type SearchAttempt = {
-  id: string
-  targetId: string
-  category: Category
-  sourceName: string
-  sourceUrl: string
-  resultPageUrl: string
-  searchQuery: string
-  searchLanguage: 'EN' | 'TH' | 'OTHER'
-  searchedAt: string
-  result: 'RECORD_FOUND' | 'NO_RESULT' | 'SOURCE_UNAVAILABLE'
-  reason: string
-  evidence: string[]
-}
+export type SearchAttempt = SearchAttemptEntity
 export type Target = {
   id: string
   targetType: 'SUBJECT_COMPANY' | (typeof targetTypes)[number]
@@ -122,55 +117,11 @@ export type Assignment = AssignmentInput & {
   targets: Target[]
   attempts: SearchAttempt[]
   cases: LegalCase[]
-  media: { title: string; sentiment: string; publisher: string; summaryEnglish: string }[]
+  media: MediaFinding[]
 }
 
-export const evidenceSchema = z
-  .object({
-    targetId: z.string().min(1),
-    category: z.enum(categories),
-    sourceName: z.string().min(1, 'Source name is required'),
-    sourceUrl: z.string(),
-    resultPageUrl: z.string(),
-    searchQuery: z.string().min(1, 'Search query is required'),
-    searchLanguage: z.enum(['EN', 'TH', 'OTHER']),
-    searchedAt: z.string().min(1),
-    result: z.enum(['RECORD_FOUND', 'NO_RESULT', 'SOURCE_UNAVAILABLE']),
-    reason: z.string(),
-    evidence: z.array(z.string()),
-  })
-  .superRefine((v, ctx) => {
-    if (v.result === 'NO_RESULT' && !v.resultPageUrl)
-      ctx.addIssue({
-        code: 'custom',
-        path: ['resultPageUrl'],
-        message: 'Result-page URL is required',
-      })
-    if (v.result === 'RECORD_FOUND' && !v.sourceUrl)
-      ctx.addIssue({
-        code: 'custom',
-        path: ['sourceUrl'],
-        message: 'Source URL is required for a record found',
-      })
-    if (v.result === 'SOURCE_UNAVAILABLE' && !v.reason)
-      ctx.addIssue({
-        code: 'custom',
-        path: ['reason'],
-        message: 'Explain why the source was unavailable',
-      })
-    if (v.evidence.length === 0)
-      ctx.addIssue({
-        code: 'custom',
-        path: ['evidence'],
-        message:
-          v.result === 'NO_RESULT'
-            ? 'Upload a screenshot showing the search query and no-result message.'
-            : v.result === 'SOURCE_UNAVAILABLE'
-              ? 'Upload a screenshot showing the unavailable page.'
-              : 'Upload a screenshot or source document.',
-      })
-  })
-export type EvidenceInput = z.infer<typeof evidenceSchema>
+export const evidenceSchema = searchEvidenceSchema
+export type EvidenceInput = SearchEvidenceInput
 
 export function completion(a: Assignment) {
   const required = a.targets.flatMap((t) =>
@@ -219,12 +170,34 @@ export function submissionIssues(a: Assignment) {
       `${undocumentedLegalChecks.length} legal record ${undocumentedLegalChecks.length === 1 ? 'match needs' : 'matches need'} a linked structured case`,
     )
 
-  const hasMediaMatch = a.attempts.some(
-    (attempt) =>
-      attempt.result === 'RECORD_FOUND' &&
-      (attempt.category === 'MEDIA_POSITIVE_NEUTRAL' || attempt.category === 'MEDIA_NEGATIVE'),
+  const mediaCheckKeys = new Set(
+    a.attempts
+      .filter(
+        (attempt) =>
+          attempt.result === 'RECORD_FOUND' &&
+          (attempt.category === 'MEDIA_POSITIVE_NEUTRAL' || attempt.category === 'MEDIA_NEGATIVE'),
+      )
+      .map((attempt) =>
+        createMediaResearchCheckKey(attempt.targetId, attempt.category as MediaResearchCategory),
+      ),
   )
-  if (hasMediaMatch && !a.media.length)
-    issues.push('Record-found media searches need a structured media finding')
+  const validMediaFindings = a.media.filter(
+    (finding) => mediaFindingFormSchema.safeParse(finding).success,
+  )
+  const documentedMediaChecks = new Set(
+    validMediaFindings.map((finding) => finding.researchCheckKey),
+  )
+  const undocumentedMediaChecks = [...mediaCheckKeys].filter(
+    (key) => !documentedMediaChecks.has(key),
+  )
+  if (undocumentedMediaChecks.length)
+    issues.push(
+      `${undocumentedMediaChecks.length} media record ${undocumentedMediaChecks.length === 1 ? 'match needs' : 'matches need'} a linked structured finding`,
+    )
+  const incompleteMediaFindings = a.media.length - validMediaFindings.length
+  if (incompleteMediaFindings)
+    issues.push(
+      `${incompleteMediaFindings} media ${incompleteMediaFindings === 1 ? 'finding needs' : 'findings need'} required details and evidence`,
+    )
   return issues
 }

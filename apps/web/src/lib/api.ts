@@ -1,4 +1,4 @@
-import type { Assignment, AssignmentInput, EvidenceInput } from '../features/assignments/model'
+import type { Assignment, AssignmentInput } from '../features/assignments/model'
 import { mapPartyTypeToBackend } from '../features/assignments/model'
 import {
   createResearchCheckKey,
@@ -8,6 +8,28 @@ import {
   type LegalCase,
   type LegalCaseInput,
 } from '../entities/legal-case'
+import {
+  createMediaResearchCheckKey,
+  isMediaResearchCategory,
+  mediaFindingDefaults,
+  mediaFindingFormSchema,
+  type MediaFinding,
+  type MediaFindingInput,
+  type MediaResearchCategory,
+  type MediaSentiment,
+} from '../entities/media-finding'
+import {
+  createSearchEvidenceDefaults,
+  searchCategories,
+  searchEvidenceSchema,
+  searchLanguages,
+  searchResults,
+  type SearchAttempt,
+  type SearchCategory,
+  type SearchEvidenceInput,
+  type SearchLanguage,
+  type SearchResult,
+} from '../entities/search-attempt'
 
 const KEY = 'cleartrace.assignments.v1'
 const wait = () => new Promise((r) => setTimeout(r, 350))
@@ -65,6 +87,9 @@ const seed: Assignment[] = [
         result: 'NO_RESULT',
         reason: '',
         evidence: ['no-results-en.png'],
+        notesOriginal: '',
+        translationEnglish: '',
+        createdAt: '2026-08-05T00:00:00.000Z',
       },
     ],
     cases: [],
@@ -86,17 +111,99 @@ function load() {
 function normalizeAssignment(value: Record<string, unknown>): Assignment {
   const assignment = value as unknown as Assignment
   const storedCases = Array.isArray(value.cases) ? value.cases : []
+  const storedAttempts = Array.isArray(value.attempts) ? value.attempts : []
+  const attempts = storedAttempts
+    .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+    .map((item, index) => normalizeSearchAttempt(assignment, item, index))
+  const storedMedia = Array.isArray(value.media) ? value.media : []
   return {
     ...assignment,
     categories: Array.isArray(value.categories) ? assignment.categories : [],
     formerNames: Array.isArray(value.formerNames) ? assignment.formerNames : [],
     parties: Array.isArray(value.parties) ? assignment.parties : [],
     targets: Array.isArray(value.targets) ? assignment.targets : [],
-    attempts: Array.isArray(value.attempts) ? assignment.attempts : [],
-    media: Array.isArray(value.media) ? assignment.media : [],
+    attempts,
+    media: storedMedia
+      .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+      .map((item, index) => normalizeMediaFinding(assignment, attempts, item, index)),
     cases: storedCases
       .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
       .map((item, index) => normalizeLegalCase(assignment, item, index)),
+  }
+}
+
+function normalizeSearchAttempt(
+  assignment: Assignment,
+  value: Record<string, unknown>,
+  index: number,
+): SearchAttempt {
+  const category = isSearchCategory(value.category) ? value.category : 'LITIGATION'
+  const result = isSearchResult(value.result) ? value.result : 'NO_RESULT'
+  const searchLanguage = isSearchLanguage(value.searchLanguage) ? value.searchLanguage : 'EN'
+  const defaults = createSearchEvidenceDefaults({ category, result, searchLanguage })
+  return {
+    ...defaults,
+    id: stringValue(value.id) || `legacy-evidence-${assignment.id}-${index}`,
+    targetId: stringValue(value.targetId),
+    category,
+    sourceName: stringValue(value.sourceName),
+    sourceUrl: safeUrl(value.sourceUrl),
+    resultPageUrl: safeUrl(value.resultPageUrl),
+    searchQuery: stringValue(value.searchQuery),
+    searchLanguage,
+    searchedAt: stringValue(value.searchedAt),
+    result,
+    reason: stringValue(value.reason),
+    evidence: Array.isArray(value.evidence)
+      ? value.evidence.filter((item): item is string => typeof item === 'string')
+      : [],
+    notesOriginal: stringValue(value.notesOriginal),
+    translationEnglish: stringValue(value.translationEnglish),
+    createdAt: stringValue(value.createdAt) || assignment.createdAt || '',
+  }
+}
+
+function normalizeMediaFinding(
+  assignment: Assignment,
+  attempts: SearchAttempt[],
+  value: Record<string, unknown>,
+  index: number,
+): MediaFinding {
+  const sentiment = isMediaSentiment(value.sentiment) ? value.sentiment : 'NEUTRAL'
+  const requestedCategory = isMediaResearchCategory(stringValue(value.category))
+    ? (value.category as MediaResearchCategory)
+    : sentiment === 'NEGATIVE'
+      ? 'MEDIA_NEGATIVE'
+      : 'MEDIA_POSITIVE_NEUTRAL'
+  const compatibleChecks = uniqueMediaChecks(
+    attempts.filter(
+      (attempt) => attempt.result === 'RECORD_FOUND' && attempt.category === requestedCategory,
+    ),
+  )
+  const inferredCheck = compatibleChecks.length === 1 ? compatibleChecks[0] : undefined
+  const targetId = stringValue(value.targetId) || inferredCheck?.targetId || ''
+  const category = inferredCheck?.category || requestedCategory
+  const researchCheckKey =
+    stringValue(value.researchCheckKey) ||
+    (inferredCheck
+      ? createMediaResearchCheckKey(inferredCheck.targetId, inferredCheck.category)
+      : '')
+
+  return {
+    ...mediaFindingDefaults,
+    id: stringValue(value.id) || `legacy-media-${assignment.id}-${index}`,
+    researchCheckKey,
+    targetId,
+    category,
+    articleTitle: stringValue(value.articleTitle) || stringValue(value.title),
+    publisher: stringValue(value.publisher),
+    publishedAt: stringValue(value.publishedAt),
+    sentiment,
+    summaryOriginal: stringValue(value.summaryOriginal),
+    summaryEnglish: stringValue(value.summaryEnglish),
+    sourceUrl: safeUrl(value.sourceUrl),
+    supportingDocument: stringValue(value.supportingDocument),
+    createdAt: stringValue(value.createdAt) || assignment.createdAt || '',
   }
 }
 
@@ -173,14 +280,26 @@ export const api = {
     save([a, ...load()])
     return a
   },
-  async evidence(id: string, v: EvidenceInput) {
+  async addSearchEvidence(id: string, v: SearchEvidenceInput) {
     await wait()
+    const input = searchEvidenceSchema.parse(v)
     const all = load()
-    const a = all.find((x) => x.id === id)
-    if (!a) throw Error('Not found')
-    a.attempts.push({ ...v, id: crypto.randomUUID() })
+    const assignment = all.find((item) => item.id === id)
+    if (!assignment) throw Error('Assignment not found')
+    if (assignment.status === 'SUBMITTED') throw Error('Submitted assignments are read-only')
+    if (!assignment.targets.some((target) => target.id === input.targetId))
+      throw Error('Select a checked party from this assignment')
+    if (!assignment.categories.includes(input.category))
+      throw Error('Select a research category configured for this assignment')
+
+    const attempt: SearchAttempt = {
+      ...input,
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+    }
+    assignment.attempts.push(attempt)
     save(all)
-    return a
+    return attempt
   },
   async addLegalCase(id: string, v: LegalCaseInput) {
     await wait()
@@ -217,6 +336,45 @@ export const api = {
     save(all)
     return legalCase
   },
+  async addMediaFinding(id: string, v: MediaFindingInput) {
+    await wait()
+    const input = mediaFindingFormSchema.parse(v)
+    const all = load()
+    const assignment = all.find((item) => item.id === id)
+    if (!assignment) throw Error('Assignment not found')
+    if (assignment.status === 'SUBMITTED') throw Error('Submitted assignments are read-only')
+
+    const attempt = assignment.attempts.find((item) => {
+      if (
+        item.result !== 'RECORD_FOUND' ||
+        (item.category !== 'MEDIA_POSITIVE_NEUTRAL' && item.category !== 'MEDIA_NEGATIVE')
+      )
+        return false
+      return createMediaResearchCheckKey(item.targetId, item.category) === input.researchCheckKey
+    })
+    if (
+      !attempt ||
+      attempt.result !== 'RECORD_FOUND' ||
+      (attempt.category !== 'MEDIA_POSITIVE_NEUTRAL' && attempt.category !== 'MEDIA_NEGATIVE')
+    )
+      throw Error('Select a record-found media match')
+
+    if (attempt.category === 'MEDIA_NEGATIVE' && input.sentiment !== 'NEGATIVE')
+      throw Error('Negative-media checks require negative sentiment')
+    if (attempt.category === 'MEDIA_POSITIVE_NEUTRAL' && input.sentiment === 'NEGATIVE')
+      throw Error('Positive/neutral media checks cannot use negative sentiment')
+
+    const finding: MediaFinding = {
+      ...input,
+      id: crypto.randomUUID(),
+      targetId: attempt.targetId,
+      category: attempt.category,
+      createdAt: new Date().toISOString(),
+    }
+    assignment.media.push(finding)
+    save(all)
+    return finding
+  },
   async submit(id: string) {
     await wait()
     const all = load()
@@ -226,6 +384,42 @@ export const api = {
     save(all)
     return a
   },
+}
+
+function stringValue(value: unknown) {
+  return typeof value === 'string' ? value : ''
+}
+
+function safeUrl(value: unknown) {
+  const candidate = stringValue(value)
+  return candidate && isHttpUrl(candidate) ? candidate : ''
+}
+
+function isSearchCategory(value: unknown): value is SearchCategory {
+  return searchCategories.some((category) => category === value)
+}
+
+function isSearchResult(value: unknown): value is SearchResult {
+  return searchResults.some((result) => result === value)
+}
+
+function isSearchLanguage(value: unknown): value is SearchLanguage {
+  return searchLanguages.some((language) => language === value)
+}
+
+function isMediaSentiment(value: unknown): value is MediaSentiment {
+  return value === 'POSITIVE' || value === 'NEUTRAL' || value === 'NEGATIVE'
+}
+
+function uniqueMediaChecks(attempts: SearchAttempt[]) {
+  const checks = new Map<string, { targetId: string; category: MediaResearchCategory }>()
+  for (const attempt of attempts) {
+    if (attempt.category !== 'MEDIA_POSITIVE_NEUTRAL' && attempt.category !== 'MEDIA_NEGATIVE')
+      continue
+    const key = createMediaResearchCheckKey(attempt.targetId, attempt.category)
+    checks.set(key, { targetId: attempt.targetId, category: attempt.category })
+  }
+  return [...checks.values()]
 }
 export const assignmentKeys = {
   all: ['assignments'] as const,

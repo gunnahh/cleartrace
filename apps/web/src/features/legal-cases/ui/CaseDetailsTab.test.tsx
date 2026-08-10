@@ -39,11 +39,14 @@ afterEach(() => {
 describe('CaseDetailsTab', () => {
   it('guides the researcher to record a legal match before adding a case', async () => {
     const onReviewLegalMatches = vi.fn()
+    const onAddLegalEvidence = vi.fn()
     const user = userEvent.setup()
 
-    renderTab(assignment, onReviewLegalMatches)
+    renderTab(assignment, onReviewLegalMatches, onAddLegalEvidence)
 
     expect(screen.getByRole('heading', { name: 'Record a legal match first' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add legal evidence' }))
+    expect(onAddLegalEvidence).toHaveBeenCalledOnce()
     await user.click(screen.getByRole('button', { name: 'Review legal matches' }))
     expect(onReviewLegalMatches).toHaveBeenCalledOnce()
   })
@@ -71,7 +74,10 @@ describe('CaseDetailsTab', () => {
       ],
     } as Assignment
 
-    renderTab(matchedAssignment)
+    const onAddLegalEvidence = vi.fn()
+    renderTab(matchedAssignment, vi.fn(), onAddLegalEvidence)
+    await user.click(screen.getByRole('button', { name: 'Add evidence' }))
+    expect(onAddLegalEvidence).toHaveBeenCalledOnce()
     await user.click(screen.getByRole('button', { name: 'Add first case' }))
 
     expect(screen.getByRole('dialog', { name: 'Add legal case' })).toBeInTheDocument()
@@ -108,12 +114,20 @@ describe('CaseDetailsTab', () => {
   })
 })
 
-function renderTab(item: Assignment, onReviewLegalMatches = vi.fn()) {
+function renderTab(
+  item: Assignment,
+  onReviewLegalMatches = vi.fn(),
+  onAddLegalEvidence?: () => void,
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
       <Theme>
-        <CaseDetailsTab assignment={item} onReviewLegalMatches={onReviewLegalMatches} />
+        <CaseDetailsTab
+          assignment={item}
+          onAddLegalEvidence={onAddLegalEvidence}
+          onReviewLegalMatches={onReviewLegalMatches}
+        />
       </Theme>
     </QueryClientProvider>,
   )

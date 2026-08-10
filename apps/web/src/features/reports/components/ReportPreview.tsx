@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Badge, Button, Card, Heading, Spinner, Text } from '@radix-ui/themes'
 import { ArrowLeft, CheckCircle2, Printer, TriangleAlert } from 'lucide-react'
-import { legalCaseLabel } from '../../../entities/legal-case'
+import { isHttpUrl, legalCaseLabel } from '../../../entities/legal-case'
+import { mediaFindingLabel, type MediaFinding } from '../../../entities/media-finding'
 import { api, assignmentKeys } from '../../../lib/api'
 import { submissionIssues } from '../../assignments/model'
 
@@ -190,10 +191,16 @@ export function ReportPreview({ assignmentId }: { assignmentId: string }) {
           </Text>
         </ReportSection>
         <ReportSection n="06" title="Positive / neutral news">
-          <Text color="gray">No findings recorded.</Text>
+          <ReportMediaFindings
+            findings={a.media.filter((finding) => finding.sentiment !== 'NEGATIVE')}
+            targets={a.targets}
+          />
         </ReportSection>
         <ReportSection n="07" title="Negative news">
-          <Text color="gray">No findings recorded.</Text>
+          <ReportMediaFindings
+            findings={a.media.filter((finding) => finding.sentiment === 'NEGATIVE')}
+            targets={a.targets}
+          />
         </ReportSection>
         <ReportSection n="08" title="Sources and limitations">
           <Text>
@@ -219,6 +226,60 @@ export function ReportPreview({ assignmentId }: { assignmentId: string }) {
     </div>
   )
 }
+
+function ReportMediaFindings({
+  findings,
+  targets,
+}: {
+  findings: MediaFinding[]
+  targets: { id: string; nameEnglish: string; nameThai: string }[]
+}) {
+  if (!findings.length) return <Text color="gray">No findings recorded.</Text>
+
+  return (
+    <div className="report-media-list">
+      {findings.map((finding) => {
+        const target = targets.find((item) => item.id === finding.targetId)
+        return (
+          <article className="report-media" key={finding.id}>
+            <div className="row">
+              <Heading size="4">{finding.articleTitle || 'Untitled legacy finding'}</Heading>
+              <Badge color={finding.sentiment === 'NEGATIVE' ? 'red' : 'gray'}>
+                {mediaFindingLabel(finding.sentiment)}
+              </Badge>
+            </div>
+            <dl>
+              <dt>Checked party</dt>
+              <dd>
+                {target?.nameEnglish || 'Not linked'}
+                {target?.nameThai ? ` · ${target.nameThai}` : ''}
+              </dd>
+              <dt>Publisher / date</dt>
+              <dd>
+                {finding.publisher || 'Not recorded'} · {finding.publishedAt || 'Date not recorded'}
+              </dd>
+              <dt>Original summary</dt>
+              <dd>{finding.summaryOriginal || 'Not recorded'}</dd>
+              <dt>English summary</dt>
+              <dd>{finding.summaryEnglish || 'Not recorded'}</dd>
+              <dt>Supporting document</dt>
+              <dd>{finding.supportingDocument || 'Not recorded'}</dd>
+              {isHttpUrl(finding.sourceUrl) && (
+                <>
+                  <dt>Source</dt>
+                  <dd>
+                    <a href={finding.sourceUrl}>{finding.sourceUrl}</a>
+                  </dd>
+                </>
+              )}
+            </dl>
+          </article>
+        )
+      })}
+    </div>
+  )
+}
+
 function ReportSection({
   n,
   title,

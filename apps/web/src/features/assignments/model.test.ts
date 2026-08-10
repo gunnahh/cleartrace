@@ -19,6 +19,8 @@ describe('conditional evidence validation', () => {
     result: 'NO_RESULT' as const,
     reason: '',
     evidence: ['proof.png'],
+    notesOriginal: '',
+    translationEnglish: '',
   }
   it('requires a no-result screenshot with exact copy', () => {
     const r = evidenceSchema.safeParse({ ...base, evidence: [] })
@@ -118,5 +120,80 @@ describe('submission issues for legal matches', () => {
       researchCheckKey: 'target-2:LITIGATION',
     } as Assignment['cases'][number])
     expect(submissionIssues(assignment).some((issue) => issue.includes('legal record'))).toBe(false)
+  })
+})
+
+describe('submission issues for media matches', () => {
+  it('requires one structured finding per media check while deduplicating languages', () => {
+    const mediaAttempt = {
+      result: 'RECORD_FOUND',
+      evidence: ['article.pdf'],
+      sourceName: 'News archive',
+      sourceUrl: 'https://example.com/news',
+      resultPageUrl: '',
+      searchQuery: 'Example',
+      searchedAt: '2026-08-01',
+      reason: '',
+      notesOriginal: '',
+      translationEnglish: '',
+    }
+    const assignment = {
+      targets: [],
+      categories: [],
+      attempts: [
+        {
+          ...mediaAttempt,
+          id: 'en',
+          targetId: 'target-1',
+          category: 'MEDIA_NEGATIVE',
+          searchLanguage: 'EN',
+        },
+        {
+          ...mediaAttempt,
+          id: 'th',
+          targetId: 'target-1',
+          category: 'MEDIA_NEGATIVE',
+          searchLanguage: 'TH',
+        },
+        {
+          ...mediaAttempt,
+          id: 'other',
+          targetId: 'target-2',
+          category: 'MEDIA_POSITIVE_NEUTRAL',
+          searchLanguage: 'EN',
+        },
+      ],
+      cases: [],
+      media: [
+        {
+          researchCheckKey: 'target-1:MEDIA_NEGATIVE',
+          articleTitle: 'Negative article',
+          publisher: 'Example News',
+          publishedAt: '2026-08-01',
+          sentiment: 'NEGATIVE',
+          summaryOriginal: 'Original summary',
+          summaryEnglish: 'English summary',
+          sourceUrl: 'https://example.com/negative',
+          supportingDocument: 'negative.pdf',
+        },
+      ],
+    } as unknown as Assignment
+
+    expect(submissionIssues(assignment)).toContain(
+      '1 media record match needs a linked structured finding',
+    )
+
+    assignment.media.push({
+      researchCheckKey: 'target-2:MEDIA_POSITIVE_NEUTRAL',
+      articleTitle: 'Neutral article',
+      publisher: 'Example News',
+      publishedAt: '2026-08-02',
+      sentiment: 'NEUTRAL',
+      summaryOriginal: 'Original summary',
+      summaryEnglish: 'English summary',
+      sourceUrl: 'https://example.com/neutral',
+      supportingDocument: 'neutral.pdf',
+    } as Assignment['media'][number])
+    expect(submissionIssues(assignment).some((issue) => issue.includes('media record'))).toBe(false)
   })
 })
