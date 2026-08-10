@@ -208,18 +208,33 @@ export function ReportPreview({ assignmentId }: { assignmentId: string }) {
             is not a legal conclusion. Source availability and name variations may affect coverage.
           </Text>
         </ReportSection>
-        <ReportSection n="09" title="Appendix: no-result screenshot evidence">
+        <ReportSection n="09" title="Appendix: search evidence">
           <div className="appendix">
-            {a.attempts
-              .filter((x) => x.result === 'NO_RESULT')
-              .map((x) => (
-                <Card key={x.id}>
+            {a.attempts.map((x) => (
+              <Card key={x.id}>
+                <div className="row">
                   <Badge>{x.searchLanguage}</Badge>
-                  <strong>{x.sourceName}</strong>
-                  <span>Query: {x.searchQuery}</span>
-                  <small>{x.evidence.join(', ')}</small>
-                </Card>
-              ))}
+                  <Badge color={x.result === 'RECORD_FOUND' ? 'green' : 'gray'}>
+                    {x.result.replaceAll('_', ' ')}
+                  </Badge>
+                </div>
+                <strong>{x.sourceName}</strong>
+                <span>Query: {x.searchQuery}</span>
+                <div className="report-evidence-files">
+                  {x.evidence.map((fileName) => {
+                    const preview = x.evidencePreviews?.find((item) => item.name === fileName)
+                    return preview ? (
+                      <figure key={fileName}>
+                        <img src={preview.dataUrl} alt={`Search evidence: ${fileName}`} />
+                        <figcaption>{fileName}</figcaption>
+                      </figure>
+                    ) : (
+                      <small key={fileName}>{fileName}</small>
+                    )
+                  })}
+                </div>
+              </Card>
+            ))}
           </div>
         </ReportSection>
       </article>

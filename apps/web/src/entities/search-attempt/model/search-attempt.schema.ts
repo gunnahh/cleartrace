@@ -41,6 +41,14 @@ export const searchEvidenceSchema = z
     result: z.enum(searchResults),
     reason: z.string().trim(),
     evidence: z.array(evidenceFileName),
+    evidencePreviews: z
+      .array(
+        z.object({
+          name: evidenceFileName,
+          dataUrl: z.string().startsWith('data:image/', 'Evidence preview must be an image'),
+        }),
+      )
+      .optional(),
     notesOriginal: z.string().trim(),
     translationEnglish: z.string().trim(),
   })
@@ -105,6 +113,7 @@ export function createSearchEvidenceDefaults(
     result: preset.result ?? 'NO_RESULT',
     reason: '',
     evidence: [],
+    evidencePreviews: [],
     notesOriginal: '',
     translationEnglish: '',
   }

@@ -1,6 +1,11 @@
 import { Badge, Button, Card, Heading, Text } from '@radix-ui/themes'
+import { Pencil1Icon, TrashIcon } from '@radix-ui/react-icons'
 import { FileSearch, Plus } from 'lucide-react'
-import { searchCategoryLabel, type SearchEvidencePreset } from '../../../entities/search-attempt'
+import {
+  searchCategoryLabel,
+  type SearchAttempt,
+  type SearchEvidencePreset,
+} from '../../../entities/search-attempt'
 import type { Assignment } from '../../assignments/model'
 
 const legalCategories = ['LITIGATION', 'BANKRUPTCY'] as const
@@ -8,9 +13,13 @@ const legalCategories = ['LITIGATION', 'BANKRUPTCY'] as const
 export function LegalMatchesTab({
   assignment,
   onAddEvidence,
+  onEditEvidence,
+  onDeleteEvidence,
 }: {
   assignment: Assignment
   onAddEvidence: (preset: SearchEvidencePreset) => void
+  onEditEvidence?: (attempt: SearchAttempt) => void
+  onDeleteEvidence?: (attempt: SearchAttempt) => void
 }) {
   const configuredCategories = legalCategories.filter((category) =>
     assignment.categories.includes(category),
@@ -115,6 +124,29 @@ export function LegalMatchesTab({
                                 {attempt.result.replaceAll('_', ' ')}
                               </Badge>
                               <small>{attempt.evidence.join(', ')}</small>
+                              {canEdit && (
+                                <span className="record-actions">
+                                  <Button
+                                    size="1"
+                                    variant="soft"
+                                    aria-label="Edit search evidence"
+                                    title="Edit"
+                                    onClick={() => onEditEvidence?.(attempt)}
+                                  >
+                                    <Pencil1Icon />
+                                  </Button>
+                                  <Button
+                                    size="1"
+                                    variant="soft"
+                                    color="red"
+                                    aria-label="Delete search evidence"
+                                    title="Delete"
+                                    onClick={() => onDeleteEvidence?.(attempt)}
+                                  >
+                                    <TrashIcon />
+                                  </Button>
+                                </span>
+                              )}
                             </li>
                           ))}
                         </ul>

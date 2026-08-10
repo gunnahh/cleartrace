@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import * as Tabs from '@radix-ui/react-tabs'
 import { Badge, Button, Card, Heading, Progress, Spinner, Text } from '@radix-ui/themes'
@@ -31,7 +31,25 @@ export function AssignmentResearchWorkspace({
     queryFn: () => api.get(assignmentId),
   })
   const [evidencePreset, setEvidencePreset] = useState<SearchEvidencePreset | null>(null)
+  const [editingAttempt, setEditingAttempt] = useState<SearchAttempt | null>(null)
   const [announcement, setAnnouncement] = useState('')
+  const queryClient = useQueryClient()
+  const deleteEvidence = useMutation({
+    mutationFn: (attemptId: string) => api.deleteSearchEvidence(assignmentId, attemptId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: assignmentKeys.detail(assignmentId),
+          exact: true,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: assignmentKeys.report(assignmentId),
+          exact: true,
+        }),
+      ])
+      setAnnouncement('Search evidence deleted.')
+    },
+  })
 
   if (assignmentQuery.isPending)
     return (
@@ -47,7 +65,17 @@ export function AssignmentResearchWorkspace({
   const progress = completion(assignment)
   const openEvidence = (preset: SearchEvidencePreset) => {
     setAnnouncement('')
+    setEditingAttempt(null)
     setEvidencePreset(preset)
+  }
+  const editEvidence = (attempt: SearchAttempt) => {
+    setEditingAttempt(attempt)
+    setEvidencePreset({
+      targetId: attempt.targetId,
+      category: attempt.category,
+      result: attempt.result,
+      searchLanguage: attempt.searchLanguage,
+    })
   }
   const handleEvidenceSaved = (attempt: SearchAttempt) => {
     setAnnouncement(
@@ -114,10 +142,26 @@ export function AssignmentResearchWorkspace({
         </Tabs.List>
 
         <Tabs.Content value="parties">
-          <CheckedPartiesTab assignment={assignment} onAddEvidence={openEvidence} />
+          <CheckedPartiesTab
+            assignment={assignment}
+            onAddEvidence={openEvidence}
+            onEditEvidence={editEvidence}
+            onDeleteEvidence={(attempt) => {
+              if (window.confirm(`Delete search evidence “${attempt.sourceName}”?`))
+                deleteEvidence.mutate(attempt.id)
+            }}
+          />
         </Tabs.Content>
         <Tabs.Content value="legal">
-          <LegalMatchesTab assignment={assignment} onAddEvidence={openEvidence} />
+          <LegalMatchesTab
+            assignment={assignment}
+            onAddEvidence={openEvidence}
+            onEditEvidence={editEvidence}
+            onDeleteEvidence={(attempt) => {
+              if (window.confirm(`Delete search evidence “${attempt.sourceName}”?`))
+                deleteEvidence.mutate(attempt.id)
+            }}
+          />
         </Tabs.Content>
         <Tabs.Content value="cases">
           <CaseDetailsTab
@@ -135,9 +179,13 @@ export function AssignmentResearchWorkspace({
         <SearchEvidenceDialog
           assignment={assignment}
           preset={evidencePreset}
+          attempt={editingAttempt}
           onSaved={handleEvidenceSaved}
           onOpenChange={(open) => {
-            if (!open) setEvidencePreset(null)
+            if (!open) {
+              setEvidencePreset(null)
+              setEditingAttempt(null)
+            }
           }}
         />
       )}

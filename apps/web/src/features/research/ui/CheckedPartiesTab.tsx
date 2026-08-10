@@ -1,14 +1,19 @@
 import { Badge, Button, Card, Heading, Text } from '@radix-ui/themes'
+import { Pencil1Icon, TrashIcon } from '@radix-ui/react-icons'
 import { Plus } from 'lucide-react'
-import type { SearchEvidencePreset } from '../../../entities/search-attempt'
+import type { SearchAttempt, SearchEvidencePreset } from '../../../entities/search-attempt'
 import { categories, type Assignment } from '../../assignments/model'
 
 export function CheckedPartiesTab({
   assignment,
   onAddEvidence,
+  onEditEvidence,
+  onDeleteEvidence,
 }: {
   assignment: Assignment
   onAddEvidence: (preset: SearchEvidencePreset) => void
+  onEditEvidence?: (attempt: SearchAttempt) => void
+  onDeleteEvidence?: (attempt: SearchAttempt) => void
 }) {
   const canEdit = assignment.status !== 'SUBMITTED'
   return (
@@ -92,6 +97,44 @@ export function CheckedPartiesTab({
                   <dd>{searches.length}</dd>
                 </div>
               </dl>
+              {searches.length > 0 && (
+                <ul className="evidence-list compact-evidence-list">
+                  {searches.map((attempt) => (
+                    <li key={attempt.id}>
+                      <span>
+                        <strong>{attempt.sourceName}</strong>
+                        <small>
+                          {attempt.category.replaceAll('_', ' ')} · {attempt.searchLanguage} ·{' '}
+                          {attempt.searchedAt}
+                        </small>
+                      </span>
+                      {canEdit && (
+                        <span className="record-actions">
+                          <Button
+                            size="1"
+                            variant="soft"
+                            aria-label="Edit search evidence"
+                            title="Edit"
+                            onClick={() => onEditEvidence?.(attempt)}
+                          >
+                            <Pencil1Icon />
+                          </Button>
+                          <Button
+                            size="1"
+                            variant="soft"
+                            color="red"
+                            aria-label="Delete search evidence"
+                            title="Delete"
+                            onClick={() => onDeleteEvidence?.(attempt)}
+                          >
+                            <TrashIcon />
+                          </Button>
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
               {canEdit && assignment.categories.length > 0 && (
                 <Button
                   size="1"

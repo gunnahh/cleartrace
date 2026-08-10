@@ -23,11 +23,13 @@ export function SearchEvidenceDialog({
   preset,
   onOpenChange,
   onSaved,
+  attempt,
 }: {
   assignment: Assignment
   preset: SearchEvidencePreset
   onOpenChange: (open: boolean) => void
   onSaved?: (attempt: SearchAttempt) => void
+  attempt?: SearchAttempt | null
 }) {
   const queryClient = useQueryClient()
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null)
@@ -37,14 +39,19 @@ export function SearchEvidenceDialog({
     : availableCategories[0]
   const form = useForm<SearchEvidenceInput>({
     resolver: zodResolver(searchEvidenceSchema),
-    defaultValues: createSearchEvidenceDefaults({
-      ...preset,
-      targetId: preset.targetId ?? assignment.targets[0]?.id ?? '',
-      category: defaultCategory ?? 'LITIGATION',
-    }),
+    defaultValues: attempt
+      ? searchAttemptInput(attempt)
+      : createSearchEvidenceDefaults({
+          ...preset,
+          targetId: preset.targetId ?? assignment.targets[0]?.id ?? '',
+          category: defaultCategory ?? 'LITIGATION',
+        }),
   })
   const mutation = useMutation({
-    mutationFn: (input: SearchEvidenceInput) => api.addSearchEvidence(assignment.id, input),
+    mutationFn: (input: SearchEvidenceInput) =>
+      attempt
+        ? api.updateSearchEvidence(assignment.id, attempt.id, input)
+        : api.addSearchEvidence(assignment.id, input),
     onSuccess: async (attempt) => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -65,12 +72,14 @@ export function SearchEvidenceDialog({
   return (
     <Dialog.Root open onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Theme ref={setPortalContainer}>
+        <Theme>
           <Dialog.Overlay className="overlay" />
-          <Dialog.Content className="dialog evidence-dialog">
+          <Dialog.Content ref={setPortalContainer} className="dialog evidence-dialog">
             <div className="sectionhead">
               <div>
-                <Dialog.Title>Add search evidence</Dialog.Title>
+                <Dialog.Title>
+                  {attempt ? 'Edit search evidence' : 'Add search evidence'}
+                </Dialog.Title>
                 <Dialog.Description>
                   Record the exact query, result, and supporting proof.
                 </Dialog.Description>
@@ -263,13 +272,19 @@ export function SearchEvidenceDialog({
                       aria-required="true"
                       aria-invalid={form.formState.errors.evidence ? true : undefined}
                       aria-describedby={`evidence-files-hint${form.formState.errors.evidence ? ' evidence-files-error' : ''}`}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const files = Array.from(event.target.files ?? [])
                         form.setValue(
                           'evidence',
-                          Array.from(event.target.files ?? []).map((file) => file.name),
+                          files.map((file) => file.name),
                           { shouldDirty: true, shouldValidate: true },
                         )
-                      }
+                        void createImagePreviews(files).then((evidencePreviews) =>
+                          form.setValue('evidencePreviews', evidencePreviews, {
+                            shouldDirty: true,
+                          }),
+                        )
+                      }}
                     />
                   </Field>
                 </div>
@@ -318,7 +333,11 @@ export function SearchEvidenceDialog({
                   </Button>
                 </Dialog.Close>
                 <Button type="submit" disabled={mutation.isPending}>
-                  {mutation.isPending ? 'Saving evidence…' : 'Save evidence'}
+                  {mutation.isPending
+                    ? 'Saving evidence…'
+                    : attempt
+                      ? 'Update evidence'
+                      : 'Save evidence'}
                 </Button>
               </div>
             </form>
@@ -327,6 +346,42 @@ export function SearchEvidenceDialog({
       </Dialog.Portal>
     </Dialog.Root>
   )
+}
+
+function searchAttemptInput(attempt: SearchAttempt): SearchEvidenceInput {
+  return {
+    targetId: attempt.targetId,
+    category: attempt.category,
+    sourceName: attempt.sourceName,
+    sourceUrl: attempt.sourceUrl,
+    resultPageUrl: attempt.resultPageUrl,
+    searchQuery: attempt.searchQuery,
+    searchLanguage: attempt.searchLanguage,
+    searchedAt: attempt.searchedAt,
+    result: attempt.result,
+    reason: attempt.reason,
+    evidence: attempt.evidence,
+    evidencePreviews: attempt.evidencePreviews ?? [],
+    notesOriginal: attempt.notesOriginal,
+    translationEnglish: attempt.translationEnglish,
+  }
+}
+
+function createImagePreviews(files: File[]) {
+  return Promise.all(
+    files
+      .filter((file) => file.type === 'image/png' || file.type === 'image/jpeg')
+      .map(async (file) => ({ name: file.name, dataUrl: await readFileAsDataUrl(file) })),
+  )
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(reader.error ?? new Error('Could not preview image'))
+    reader.readAsDataURL(file)
+  })
 }
 
 type SelectName = 'targetId' | 'category' | 'searchLanguage' | 'result'

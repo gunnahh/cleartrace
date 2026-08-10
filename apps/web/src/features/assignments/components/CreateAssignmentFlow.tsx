@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { TrashIcon } from '@radix-ui/react-icons'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, Link } from '@tanstack/react-router'
 import {
@@ -13,7 +14,7 @@ import {
   TextArea,
   TextField,
 } from '@radix-ui/themes'
-import { ArrowLeft, ArrowRight, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Plus } from 'lucide-react'
 import { assignmentSchema, type AssignmentInput, categories, type PartyType } from '../model'
 import { api, assignmentKeys } from '../../../lib/api'
 import { Field } from '../../../components/Field'
@@ -145,7 +146,7 @@ export function CreateAssignmentFlow() {
                       aria-label={`Remove former name ${i + 1}`}
                       onClick={() => aliases.remove(i)}
                     >
-                      <Trash2 />
+                      <TrashIcon />
                     </Button>
                   </div>
                 ))}
@@ -195,7 +196,7 @@ export function CreateAssignmentFlow() {
                           color="red"
                           onClick={() => parties.remove(i)}
                         >
-                          <Trash2 />
+                          <TrashIcon />
                           Remove
                         </Button>
                       </div>

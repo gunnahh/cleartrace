@@ -10,6 +10,7 @@ import {
   mediaFindingFormSchema,
   mediaFindingLabel,
   type MediaFindingInput,
+  type MediaFinding,
 } from '../../../entities/media-finding'
 import { api, assignmentKeys } from '../../../lib/api'
 import type { Assignment } from '../../assignments/model'
@@ -24,20 +25,27 @@ export function MediaFindingDialog({
   mediaChecks,
   onOpenChange,
   onSaved,
+  finding,
 }: {
   assignment: Assignment
   mediaChecks: MediaCheckMatch[]
   onOpenChange: (open: boolean) => void
   onSaved: () => void
+  finding?: MediaFinding | null
 }) {
   const queryClient = useQueryClient()
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null)
   const form = useForm<MediaFindingInput>({
     resolver: zodResolver(mediaFindingFormSchema),
-    defaultValues: mediaFindingDefaultsForCheck(mediaChecks[0]),
+    defaultValues: finding
+      ? mediaFindingInput(finding)
+      : mediaFindingDefaultsForCheck(mediaChecks[0]),
   })
   const mutation = useMutation({
-    mutationFn: (input: MediaFindingInput) => api.addMediaFinding(assignment.id, input),
+    mutationFn: (input: MediaFindingInput) =>
+      finding
+        ? api.updateMediaFinding(assignment.id, finding.id, input)
+        : api.addMediaFinding(assignment.id, input),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -62,12 +70,12 @@ export function MediaFindingDialog({
   return (
     <Dialog.Root open onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Theme ref={setPortalContainer}>
+        <Theme>
           <Dialog.Overlay className="overlay" />
-          <Dialog.Content className="dialog media-dialog">
+          <Dialog.Content ref={setPortalContainer} className="dialog media-dialog">
             <div className="sectionhead">
               <div>
-                <Dialog.Title>Add media finding</Dialog.Title>
+                <Dialog.Title>{finding ? 'Edit media finding' : 'Add media finding'}</Dialog.Title>
                 <Dialog.Description>
                   Capture the article, summaries, source, and supporting document.
                 </Dialog.Description>
@@ -261,7 +269,11 @@ export function MediaFindingDialog({
                   </Button>
                 </Dialog.Close>
                 <Button type="submit" disabled={mutation.isPending}>
-                  {mutation.isPending ? 'Saving finding…' : 'Save media finding'}
+                  {mutation.isPending
+                    ? 'Saving finding…'
+                    : finding
+                      ? 'Update media finding'
+                      : 'Save media finding'}
                 </Button>
               </div>
             </form>
@@ -270,6 +282,20 @@ export function MediaFindingDialog({
       </Dialog.Portal>
     </Dialog.Root>
   )
+}
+
+function mediaFindingInput(finding: MediaFinding): MediaFindingInput {
+  return {
+    researchCheckKey: finding.researchCheckKey,
+    articleTitle: finding.articleTitle,
+    publisher: finding.publisher,
+    publishedAt: finding.publishedAt,
+    sentiment: finding.sentiment,
+    summaryOriginal: finding.summaryOriginal,
+    summaryEnglish: finding.summaryEnglish,
+    sourceUrl: finding.sourceUrl,
+    supportingDocument: finding.supportingDocument,
+  }
 }
 
 type MediaTextName = 'articleTitle' | 'publisher' | 'publishedAt' | 'sourceUrl'

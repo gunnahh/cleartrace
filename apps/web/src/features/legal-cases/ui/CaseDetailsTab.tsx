@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as Dialog from '@radix-ui/react-dialog'
+import { Pencil1Icon, TrashIcon } from '@radix-ui/react-icons'
 import {
   Badge,
   Button,
@@ -12,7 +13,7 @@ import {
   TextField,
   Theme,
 } from '@radix-ui/themes'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { ExternalLink, FileText, Gavel, Plus, X } from 'lucide-react'
 import { Controller, useForm, type UseFormReturn } from 'react-hook-form'
 import { Field } from '../../../components/Field'
@@ -27,6 +28,7 @@ import {
   legalTargetRoles,
   verdictStatuses,
   type LegalCaseInput,
+  type LegalCase,
   type LegalResearchCategory,
 } from '../../../entities/legal-case'
 import { api, assignmentKeys } from '../../../lib/api'
@@ -49,6 +51,7 @@ export function CaseDetailsTab({
   onReviewLegalMatches: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const [editingCase, setEditingCase] = useState<LegalCase | null>(null)
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const queryClient = useQueryClient()
@@ -58,7 +61,10 @@ export function CaseDetailsTab({
     defaultValues: { ...legalCaseDefaults, researchCheckKey: legalChecks[0]?.key ?? '' },
   })
   const mutation = useMutation({
-    mutationFn: (input: LegalCaseInput) => api.addLegalCase(assignment.id, input),
+    mutationFn: (input: LegalCaseInput) =>
+      editingCase
+        ? api.updateLegalCase(assignment.id, editingCase.id, input)
+        : api.addLegalCase(assignment.id, input),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -71,16 +77,48 @@ export function CaseDetailsTab({
         }),
       ])
       setOpen(false)
-      setAnnouncement('Legal case saved.')
+      setAnnouncement(editingCase ? 'Legal case updated.' : 'Legal case saved.')
+      setEditingCase(null)
       form.reset({ ...legalCaseDefaults, researchCheckKey: legalChecks[0]?.key ?? '' })
     },
   })
+  const deleteMutation = useMutation({
+    mutationFn: (caseId: string) => api.deleteLegalCase(assignment.id, caseId),
+    onSuccess: async () => {
+      await invalidateAssignment(queryClient, assignment.id)
+      setAnnouncement('Legal case deleted.')
+    },
+  })
 
-  const openCaseForm = () => {
+  const openCaseForm = (legalCase?: LegalCase) => {
     mutation.reset()
     setAnnouncement('')
-    if (!form.formState.isDirty)
+    setEditingCase(legalCase ?? null)
+    if (legalCase) {
+      form.reset({
+        researchCheckKey: legalCase.researchCheckKey,
+        caseNumber: legalCase.caseNumber,
+        classification: legalCase.classification,
+        courtLevel: legalCase.courtLevel,
+        courtName: legalCase.courtName,
+        originatingCourt: legalCase.originatingCourt,
+        registrationDate: legalCase.registrationDate,
+        targetRole: legalCase.targetRole,
+        plaintiffs: legalCase.plaintiffs,
+        defendants: legalCase.defendants,
+        caseBackground: legalCase.caseBackground,
+        petition: legalCase.petition,
+        verdictDate: legalCase.verdictDate,
+        verdictStatus: legalCase.verdictStatus,
+        verdictOutcome: legalCase.verdictOutcome,
+        relatedCases: legalCase.relatedCases,
+        sourceUrl: legalCase.sourceUrl,
+        originalSourceDocument: legalCase.originalSourceDocument,
+        englishTranslatedDocument: legalCase.englishTranslatedDocument,
+      })
+    } else {
       form.reset({ ...legalCaseDefaults, researchCheckKey: legalChecks[0]?.key ?? '' })
+    }
     setOpen(true)
   }
 
@@ -110,7 +148,7 @@ export function CaseDetailsTab({
                   Add evidence
                 </Button>
               )}
-              <Button onClick={openCaseForm}>
+              <Button onClick={() => openCaseForm()}>
                 <Plus />
                 Add legal case
               </Button>
@@ -145,6 +183,34 @@ export function CaseDetailsTab({
                       {legalCaseLabel(legalCase.verdictStatus || 'Unknown')}
                     </Badge>
                   </header>
+
+                  {assignment.status !== 'SUBMITTED' && (
+                    <div className="record-actions">
+                      <Button
+                        size="1"
+                        variant="soft"
+                        aria-label={`Edit legal case ${legalCase.caseNumber}`}
+                        title="Edit"
+                        onClick={() => openCaseForm(legalCase)}
+                      >
+                        <Pencil1Icon />
+                      </Button>
+                      <Button
+                        size="1"
+                        variant="soft"
+                        color="red"
+                        aria-label={`Delete legal case ${legalCase.caseNumber}`}
+                        title="Delete"
+                        disabled={deleteMutation.isPending}
+                        onClick={() => {
+                          if (window.confirm(`Delete legal case ${legalCase.caseNumber}?`))
+                            deleteMutation.mutate(legalCase.id)
+                        }}
+                      >
+                        <TrashIcon />
+                      </Button>
+                    </div>
+                  )}
 
                   <dl className="case-summary">
                     <div>
@@ -228,7 +294,7 @@ export function CaseDetailsTab({
               {legalChecks.length === 1 ? 'check is' : 'checks are'} ready to be documented.
             </Text>
             {assignment.status !== 'SUBMITTED' && (
-              <Button onClick={openCaseForm}>Add first case</Button>
+              <Button onClick={() => openCaseForm()}>Add first case</Button>
             )}
           </div>
         )}
@@ -236,12 +302,12 @@ export function CaseDetailsTab({
 
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
-          <Theme ref={setPortalContainer}>
+          <Theme>
             <Dialog.Overlay className="overlay" />
-            <Dialog.Content className="dialog case-dialog">
+            <Dialog.Content ref={setPortalContainer} className="dialog case-dialog">
               <div className="sectionhead">
                 <div>
-                  <Dialog.Title>Add legal case</Dialog.Title>
+                  <Dialog.Title>{editingCase ? 'Edit legal case' : 'Add legal case'}</Dialog.Title>
                   <Dialog.Description>
                     Capture the court record in structured fields for reporting and review.
                   </Dialog.Description>
@@ -619,7 +685,11 @@ export function CaseDetailsTab({
                     </Button>
                   </Dialog.Close>
                   <Button type="submit" disabled={mutation.isPending}>
-                    {mutation.isPending ? 'Saving case…' : 'Save legal case'}
+                    {mutation.isPending
+                      ? 'Saving case…'
+                      : editingCase
+                        ? 'Update legal case'
+                        : 'Save legal case'}
                   </Button>
                 </div>
               </form>
@@ -685,6 +755,19 @@ function fieldA11y(id: string, error?: string, required = false, hasHint = false
     'aria-invalid': error ? true : undefined,
     'aria-describedby': describedBy || undefined,
   }
+}
+
+function invalidateAssignment(queryClient: QueryClient, assignmentId: string) {
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: assignmentKeys.detail(assignmentId),
+      exact: true,
+    }),
+    queryClient.invalidateQueries({
+      queryKey: assignmentKeys.report(assignmentId),
+      exact: true,
+    }),
+  ])
 }
 
 function isLegalMatch(

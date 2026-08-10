@@ -320,6 +320,16 @@ legend {
 .formactions {
   margin-top: 18px;
 }
+.record-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+.compact-evidence-list {
+  margin: 14px 0;
+  padding: 0;
+}
 .review {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -422,9 +432,10 @@ legend {
 .dialog {
   position: fixed;
   z-index: 21;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 5vh;
+  left: 0;
+  right: 0;
+  margin-inline: auto;
   width: min(820px, calc(100vw - 32px));
   max-height: 90vh;
   overflow: auto;
@@ -842,6 +853,31 @@ legend {
   align-items: flex-start;
   gap: 6px;
   padding: 14px;
+}
+.report-evidence-files {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+.report-evidence-files figure {
+  margin: 0;
+  break-inside: avoid;
+}
+.report-evidence-files img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 520px;
+  object-fit: contain;
+  object-position: top left;
+  border: 1px solid #dedee8;
+  border-radius: 6px;
+}
+.report-evidence-files figcaption {
+  margin-top: 5px;
+  color: #6a6978;
+  font-size: 11px;
+  overflow-wrap: anywhere;
 }
 .report-case-list {
   display: flex;

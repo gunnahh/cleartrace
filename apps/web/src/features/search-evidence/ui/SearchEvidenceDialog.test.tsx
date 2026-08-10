@@ -87,6 +87,17 @@ describe('SearchEvidenceDialog', () => {
     expect(screen.getByText('Source name is required')).toBeInTheDocument()
     expect(mocks.addSearchEvidence).not.toHaveBeenCalled()
   })
+
+  it('can change a select option inside the modal', async () => {
+    const user = userEvent.setup()
+    renderDialog(vi.fn())
+
+    await user.click(screen.getByRole('combobox', { name: 'Result' }))
+    await user.click(await screen.findByRole('option', { name: 'No result found' }))
+
+    expect(screen.getByRole('combobox', { name: 'Result' })).toHaveTextContent('No result found')
+    expect(screen.getByLabelText(/Result-page URL/)).toBeInTheDocument()
+  })
 })
 
 function renderDialog(onOpenChange: (open: boolean) => void) {

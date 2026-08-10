@@ -272,7 +272,7 @@ function createCompleteMockAttempts(): SearchAttempt[] {
             result === 'RECORD_FOUND' ? `https://example.com/source/mock-result-${index}` : '',
           resultPageUrl:
             result === 'NO_RESULT' ? `https://example.com/search/mock-no-result-${index}` : '',
-          searchQuery: `\"${query}\"`,
+          searchQuery: `"${query}"`,
           searchLanguage,
           searchedAt: '2026-08-10',
           result,
@@ -335,6 +335,9 @@ function normalizeSearchAttempt(
     reason: stringValue(value.reason),
     evidence: Array.isArray(value.evidence)
       ? value.evidence.filter((item): item is string => typeof item === 'string')
+      : [],
+    evidencePreviews: Array.isArray(value.evidencePreviews)
+      ? value.evidencePreviews.filter(isEvidencePreview)
       : [],
     notesOriginal: stringValue(value.notesOriginal),
     translationEnglish: stringValue(value.translationEnglish),
@@ -480,6 +483,36 @@ export const api = {
     save(all)
     return attempt
   },
+  async updateSearchEvidence(id: string, attemptId: string, v: SearchEvidenceInput) {
+    await wait()
+    const input = searchEvidenceSchema.parse(v)
+    const all = load()
+    const assignment = writableAssignment(all, id)
+    const index = assignment.attempts.findIndex((attempt) => attempt.id === attemptId)
+    if (index < 0) throw Error('Search evidence not found')
+    assignment.attempts[index] = { ...assignment.attempts[index], ...input }
+    save(all)
+    return assignment.attempts[index]
+  },
+  async deleteSearchEvidence(id: string, attemptId: string) {
+    await wait()
+    const all = load()
+    const assignment = writableAssignment(all, id)
+    const attempt = assignment.attempts.find((item) => item.id === attemptId)
+    if (!attempt) throw Error('Search evidence not found')
+    const checkKey = `${attempt.targetId}:${attempt.category}`
+    assignment.attempts = assignment.attempts.filter((item) => item.id !== attemptId)
+    if (
+      !assignment.attempts.some(
+        (item) =>
+          `${item.targetId}:${item.category}` === checkKey && item.result === 'RECORD_FOUND',
+      )
+    ) {
+      assignment.cases = assignment.cases.filter((item) => item.researchCheckKey !== checkKey)
+      assignment.media = assignment.media.filter((item) => item.researchCheckKey !== checkKey)
+    }
+    save(all)
+  },
   async addLegalCase(id: string, v: LegalCaseInput) {
     await wait()
     const input = legalCaseFormSchema.parse(v)
@@ -514,6 +547,38 @@ export const api = {
     assignment.cases.push(legalCase)
     save(all)
     return legalCase
+  },
+  async updateLegalCase(id: string, caseId: string, v: LegalCaseInput) {
+    await wait()
+    const input = legalCaseFormSchema.parse(v)
+    const all = load()
+    const assignment = writableAssignment(all, id)
+    const index = assignment.cases.findIndex((item) => item.id === caseId)
+    if (index < 0) throw Error('Legal case not found')
+    const attempt = assignment.attempts.find(
+      (item) =>
+        item.result === 'RECORD_FOUND' &&
+        (item.category === 'LITIGATION' || item.category === 'BANKRUPTCY') &&
+        createResearchCheckKey(item.targetId, item.category) === input.researchCheckKey,
+    )
+    if (!attempt || (attempt.category !== 'LITIGATION' && attempt.category !== 'BANKRUPTCY'))
+      throw Error('Select a record-found litigation or bankruptcy match')
+    assignment.cases[index] = {
+      ...assignment.cases[index],
+      ...input,
+      targetId: attempt.targetId,
+      category: attempt.category,
+    }
+    save(all)
+    return assignment.cases[index]
+  },
+  async deleteLegalCase(id: string, caseId: string) {
+    await wait()
+    const all = load()
+    const assignment = writableAssignment(all, id)
+    if (!assignment.cases.some((item) => item.id === caseId)) throw Error('Legal case not found')
+    assignment.cases = assignment.cases.filter((item) => item.id !== caseId)
+    save(all)
   },
   async addMediaFinding(id: string, v: MediaFindingInput) {
     await wait()
@@ -554,6 +619,42 @@ export const api = {
     save(all)
     return finding
   },
+  async updateMediaFinding(id: string, findingId: string, v: MediaFindingInput) {
+    await wait()
+    const input = mediaFindingFormSchema.parse(v)
+    const all = load()
+    const assignment = writableAssignment(all, id)
+    const index = assignment.media.findIndex((item) => item.id === findingId)
+    if (index < 0) throw Error('Media finding not found')
+    const attempt = assignment.attempts.find(
+      (item) =>
+        item.result === 'RECORD_FOUND' &&
+        (item.category === 'MEDIA_POSITIVE_NEUTRAL' || item.category === 'MEDIA_NEGATIVE') &&
+        createMediaResearchCheckKey(item.targetId, item.category) === input.researchCheckKey,
+    )
+    if (
+      !attempt ||
+      (attempt.category !== 'MEDIA_POSITIVE_NEUTRAL' && attempt.category !== 'MEDIA_NEGATIVE')
+    )
+      throw Error('Select a record-found media match')
+    assignment.media[index] = {
+      ...assignment.media[index],
+      ...input,
+      targetId: attempt.targetId,
+      category: attempt.category,
+    }
+    save(all)
+    return assignment.media[index]
+  },
+  async deleteMediaFinding(id: string, findingId: string) {
+    await wait()
+    const all = load()
+    const assignment = writableAssignment(all, id)
+    if (!assignment.media.some((item) => item.id === findingId))
+      throw Error('Media finding not found')
+    assignment.media = assignment.media.filter((item) => item.id !== findingId)
+    save(all)
+  },
   async submit(id: string) {
     await wait()
     const all = load()
@@ -563,6 +664,13 @@ export const api = {
     save(all)
     return a
   },
+}
+
+function writableAssignment(all: Assignment[], id: string) {
+  const assignment = all.find((item) => item.id === id)
+  if (!assignment) throw Error('Assignment not found')
+  if (assignment.status === 'SUBMITTED') throw Error('Submitted assignments are read-only')
+  return assignment
 }
 
 function stringValue(value: unknown) {
@@ -588,6 +696,16 @@ function isSearchLanguage(value: unknown): value is SearchLanguage {
 
 function isMediaSentiment(value: unknown): value is MediaSentiment {
   return value === 'POSITIVE' || value === 'NEUTRAL' || value === 'NEGATIVE'
+}
+
+function isEvidencePreview(value: unknown): value is { name: string; dataUrl: string } {
+  if (!value || typeof value !== 'object') return false
+  const preview = value as Record<string, unknown>
+  return (
+    typeof preview.name === 'string' &&
+    typeof preview.dataUrl === 'string' &&
+    preview.dataUrl.startsWith('data:image/')
+  )
 }
 
 function uniqueMediaChecks(attempts: SearchAttempt[]) {

@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { Button, Card, Heading, Text } from '@radix-ui/themes'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Newspaper, Plus } from 'lucide-react'
 import type { SearchEvidencePreset } from '../../../entities/search-attempt'
+import type { MediaFinding } from '../../../entities/media-finding'
+import { api, assignmentKeys } from '../../../lib/api'
 import type { Assignment } from '../../assignments/model'
 import { getMediaCheckMatches, hasConfiguredMediaCategory } from '../model/media-checks'
 import { preferredMediaEvidencePreset } from '../model/media-evidence-preset'
@@ -16,7 +19,9 @@ export function MediaNewsTab({
   onAddEvidence: (preset: SearchEvidencePreset) => void
 }) {
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingFinding, setEditingFinding] = useState<MediaFinding | null>(null)
   const [announcement, setAnnouncement] = useState('')
+  const queryClient = useQueryClient()
   const mediaChecks = getMediaCheckMatches(assignment.attempts)
   const positiveNeutral = assignment.media.filter((finding) => finding.sentiment !== 'NEGATIVE')
   const negative = assignment.media.filter((finding) => finding.sentiment === 'NEGATIVE')
@@ -25,7 +30,32 @@ export function MediaNewsTab({
 
   const openFindingForm = () => {
     setAnnouncement('')
+    setEditingFinding(null)
     setDialogOpen(true)
+  }
+  const deleteMutation = useMutation({
+    mutationFn: (findingId: string) => api.deleteMediaFinding(assignment.id, findingId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: assignmentKeys.detail(assignment.id),
+          exact: true,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: assignmentKeys.report(assignment.id),
+          exact: true,
+        }),
+      ])
+      setAnnouncement('Media finding deleted.')
+    },
+  })
+  const editFinding = (finding: MediaFinding) => {
+    setEditingFinding(finding)
+    setDialogOpen(true)
+  }
+  const deleteFinding = (finding: MediaFinding) => {
+    if (window.confirm(`Delete media finding “${finding.articleTitle}”?`))
+      deleteMutation.mutate(finding.id)
   }
 
   return (
@@ -83,12 +113,18 @@ export function MediaNewsTab({
               title="Positive & neutral news"
               findings={positiveNeutral}
               assignment={assignment}
+              canEdit={canEdit}
+              onEdit={editFinding}
+              onDelete={deleteFinding}
             />
             <MediaFindingList
               title="Negative news"
               findings={negative}
               assignment={assignment}
               negative
+              canEdit={canEdit}
+              onEdit={editFinding}
+              onDelete={deleteFinding}
             />
           </div>
         )}
@@ -98,8 +134,11 @@ export function MediaNewsTab({
         <MediaFindingDialog
           assignment={assignment}
           mediaChecks={mediaChecks}
+          finding={editingFinding}
           onOpenChange={setDialogOpen}
-          onSaved={() => setAnnouncement('Media finding saved.')}
+          onSaved={() =>
+            setAnnouncement(editingFinding ? 'Media finding updated.' : 'Media finding saved.')
+          }
         />
       )}
     </>

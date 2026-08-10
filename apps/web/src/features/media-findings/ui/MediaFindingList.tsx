@@ -1,4 +1,5 @@
-import { Badge, Heading, Text } from '@radix-ui/themes'
+import { Badge, Button, Heading, Text } from '@radix-ui/themes'
+import { Pencil1Icon, TrashIcon } from '@radix-ui/react-icons'
 import { ExternalLink, FileText } from 'lucide-react'
 import { isHttpUrl } from '../../../entities/legal-case'
 import { mediaFindingLabel, type MediaFinding } from '../../../entities/media-finding'
@@ -9,11 +10,17 @@ export function MediaFindingList({
   findings,
   assignment,
   negative = false,
+  canEdit = false,
+  onEdit,
+  onDelete,
 }: {
   title: string
   findings: MediaFinding[]
   assignment: Assignment
   negative?: boolean
+  canEdit?: boolean
+  onEdit?: (finding: MediaFinding) => void
+  onDelete?: (finding: MediaFinding) => void
 }) {
   return (
     <section>
@@ -45,6 +52,29 @@ export function MediaFindingList({
                     {finding.publishedAt || 'Date not recorded'}
                   </Text>
                 </header>
+                {canEdit && (
+                  <div className="record-actions">
+                    <Button
+                      size="1"
+                      variant="soft"
+                      aria-label="Edit media finding"
+                      title="Edit"
+                      onClick={() => onEdit?.(finding)}
+                    >
+                      <Pencil1Icon />
+                    </Button>
+                    <Button
+                      size="1"
+                      variant="soft"
+                      color="red"
+                      aria-label="Delete media finding"
+                      title="Delete"
+                      onClick={() => onDelete?.(finding)}
+                    >
+                      <TrashIcon />
+                    </Button>
+                  </div>
+                )}
                 <dl className="media-summary">
                   <div>
                     <dt>Checked party</dt>
