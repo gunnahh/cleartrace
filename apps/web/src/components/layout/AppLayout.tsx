@@ -1,17 +1,19 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link, Outlet } from '@tanstack/react-router'
+import { Link, Outlet, useNavigate } from '@tanstack/react-router'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
   FileCheck2,
+  LogOut,
   Menu,
   UserRound,
   X,
   Search,
 } from 'lucide-react'
 import { IconButton, Tooltip } from '@radix-ui/themes'
+import { authApi } from '../../features/auth/api'
 
 const CollapsedTooltip = ({
   collapsed,
@@ -30,7 +32,15 @@ const CollapsedTooltip = ({
     children
   )
 
-const Nav = ({ close, collapsed = false }: { close?: () => void; collapsed?: boolean }) => (
+const Nav = ({
+  close,
+  collapsed = false,
+  onLogout,
+}: {
+  close?: () => void
+  collapsed?: boolean
+  onLogout: () => void
+}) => (
   <nav aria-label="Primary">
     <Link className="brand" to="/" onClick={close} aria-label="ClearTrace home">
       <span className="brandmark">
@@ -74,10 +84,17 @@ const Nav = ({ close, collapsed = false }: { close?: () => void; collapsed?: boo
         <span className="nav-label">Profile</span>
       </Link>
     </CollapsedTooltip>
+    <CollapsedTooltip collapsed={collapsed} label="Log out">
+      <button type="button" aria-label="Log out" onClick={onLogout}>
+        <LogOut />
+        <span className="nav-label">Log out</span>
+      </button>
+    </CollapsedTooltip>
   </nav>
 )
 
 export function AppLayout() {
+  const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(
     () => window.localStorage.getItem('cleartrace.sidebar-collapsed') === 'true',
   )
@@ -86,10 +103,18 @@ export function AppLayout() {
     window.localStorage.setItem('cleartrace.sidebar-collapsed', String(collapsed))
   }, [collapsed])
 
+  const logout = async () => {
+    try {
+      await authApi.logout()
+    } finally {
+      await navigate({ to: '/login' })
+    }
+  }
+
   return (
     <div className={`app${collapsed ? ' sidebar-collapsed' : ''}`}>
       <aside aria-label="Application sidebar">
-        <Nav collapsed={collapsed} />
+        <Nav collapsed={collapsed} onLogout={logout} />
         <Tooltip content={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} side="right">
           <IconButton
             className="sidebar-toggle"
@@ -119,7 +144,7 @@ export function AppLayout() {
                   <X />
                 </IconButton>
               </Dialog.Close>
-              <Nav />
+              <Nav close={() => undefined} onLogout={logout} />
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog.Root>

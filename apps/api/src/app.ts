@@ -31,7 +31,36 @@ export async function buildApp(
   app.decorate('prisma', prisma)
   app.setValidatorCompiler(validatorCompiler)
   app.setSerializerCompiler(serializerCompiler)
-  await app.register(cors, { origin: config.WEB_ORIGIN, credentials: true })
+  app.setErrorHandler((error, request, reply) => {
+    if (isZodValidationError(error)) {
+      const fieldErrors: Record<string, string[]> = {}
+      for (const issue of error.issues) {
+        const key = issue.path.join('.') || 'root'
+        ;(fieldErrors[key] ??= []).push(issue.message)
+      }
+      return reply.code(422).send({
+        code: 'VALIDATION_ERROR',
+        message: 'Request validation failed',
+        fieldErrors,
+        requestId: request.id,
+      })
+    }
+    const appError =
+      error instanceof AppError
+        ? error
+        : new AppError('INTERNAL_ERROR', 'An unexpected error occurred', 500)
+    if (!(error instanceof AppError)) request.log.error(error)
+    return reply.code(appError.statusCode).send({
+      code: appError.code,
+      message: appError.message,
+      fieldErrors: appError.fieldErrors,
+      requestId: request.id,
+    })
+  })
+  await app.register(cors, {
+    origin: [config.WEB_ORIGIN, ...config.ADDITIONAL_WEB_ORIGINS],
+    credentials: true,
+  })
   await app.register(helmet)
   await app.register(cookie)
   await app.register(jwt, {
@@ -65,32 +94,18 @@ export async function buildApp(
       requestId: request.id,
     }),
   )
-  app.setErrorHandler((error, request, reply) => {
-    if (error instanceof ZodError) {
-      const fieldErrors: Record<string, string[]> = {}
-      for (const issue of error.issues) {
-        const key = issue.path.join('.') || 'root'
-        ;(fieldErrors[key] ??= []).push(issue.message)
-      }
-      return reply.code(422).send({
-        code: 'VALIDATION_ERROR',
-        message: 'Request validation failed',
-        fieldErrors,
-        requestId: request.id,
-      })
-    }
-    const appError =
-      error instanceof AppError
-        ? error
-        : new AppError('INTERNAL_ERROR', 'An unexpected error occurred', 500)
-    if (!(error instanceof AppError)) request.log.error(error)
-    return reply.code(appError.statusCode).send({
-      code: appError.code,
-      message: appError.message,
-      fieldErrors: appError.fieldErrors,
-      requestId: request.id,
-    })
-  })
   app.addHook('onClose', () => prisma.$disconnect())
   return app
+}
+
+function isZodValidationError(
+  error: unknown,
+): error is ZodError | { issues: Array<{ path: PropertyKey[]; message: string }> } {
+  return (
+    error instanceof ZodError ||
+    (!!error &&
+      typeof error === 'object' &&
+      'issues' in error &&
+      Array.isArray((error as { issues?: unknown }).issues))
+  )
 }

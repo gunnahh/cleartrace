@@ -45,7 +45,8 @@ body {
   width: 76px;
   padding-inline: 10px;
 }
-.app.sidebar-collapsed nav > a {
+.app.sidebar-collapsed nav > a,
+.app.sidebar-collapsed nav > button {
   justify-content: center;
   padding-inline: 0;
 }
@@ -71,7 +72,8 @@ nav {
   gap: 6px;
   height: 100%;
 }
-nav > a {
+nav > a,
+nav > button {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -82,14 +84,22 @@ nav > a {
   font-size: 14px;
   font-weight: 600;
 }
-nav > a svg {
+nav > button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+nav > a svg,
+nav > button svg {
   width: 19px;
 }
 nav > a.active {
   background: var(--iris-3);
   color: var(--iris-11);
 }
-nav > a:last-child {
+nav > :last-child {
   margin-top: auto;
 }
 .brand {
@@ -900,6 +910,31 @@ legend {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+.auth-form,
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.auth-form {
+  gap: 16px;
+}
+.auth-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.google-mark {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  color: #4285f4;
+  font-weight: 800;
 }
 .centered {
   justify-content: center;

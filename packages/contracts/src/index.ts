@@ -95,6 +95,8 @@ export const mediaFindingSchema = z.object({
   summary: z.string().min(1),
 })
 export const loginSchema = z.object({ email: z.string().email(), password: z.string().min(8) })
+export const registerSchema = loginSchema
+export const forgotPasswordSchema = z.object({ email: z.string().email() })
 export const errorSchema = z.object({
   code: z.string(),
   message: z.string(),

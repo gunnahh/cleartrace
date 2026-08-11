@@ -6,6 +6,16 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32),
   PORT: z.coerce.number().default(3001),
   WEB_ORIGIN: z.string().url().default('http://localhost:5173'),
+  ADDITIONAL_WEB_ORIGINS: z
+    .string()
+    .default('')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.string().url())),
   UPLOAD_DIR: z.string().default('./data/uploads'),
   MAX_UPLOAD_BYTES: z.coerce
     .number()
