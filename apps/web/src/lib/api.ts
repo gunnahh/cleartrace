@@ -32,6 +32,7 @@ import {
 } from '../entities/search-attempt'
 
 const KEY = 'cleartrace.assignments.v1'
+const DELETED_ASSIGNMENTS_KEY = 'cleartrace.deleted-assignments.v1'
 const wait = () => new Promise((r) => setTimeout(r, 350))
 const seed: Assignment[] = [
   {
@@ -218,15 +219,29 @@ function load() {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(KEY) || 'null')
     if (!Array.isArray(parsed)) return seed
+    const deletedAssignmentIds = loadDeletedAssignmentIds()
     const stored = parsed
       .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
       .map(normalizeAssignment)
     const missingDemoAssignments = seed.filter(
-      (demo) => !stored.some((assignment) => assignment.id === demo.id),
+      (demo) =>
+        !deletedAssignmentIds.has(demo.id) &&
+        !stored.some((assignment) => assignment.id === demo.id),
     )
     return [...stored, ...missingDemoAssignments]
   } catch {
     return seed
+  }
+}
+
+function loadDeletedAssignmentIds() {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(DELETED_ASSIGNMENTS_KEY) || '[]')
+    return new Set(
+      Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [],
+    )
+  } catch {
+    return new Set<string>()
   }
 }
 
@@ -460,6 +475,15 @@ export const api = {
     const x = load().find((a) => a.id === id)
     if (!x) throw new Error('Assignment not found')
     return x
+  },
+  async deleteAssignment(id: string) {
+    await wait()
+    const all = load()
+    const assignment = writableAssignment(all, id)
+    save(all.filter((item) => item.id !== assignment.id))
+    const deletedAssignmentIds = loadDeletedAssignmentIds()
+    deletedAssignmentIds.add(id)
+    localStorage.setItem(DELETED_ASSIGNMENTS_KEY, JSON.stringify([...deletedAssignmentIds]))
   },
   async create(v: AssignmentInput) {
     await wait()

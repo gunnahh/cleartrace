@@ -122,9 +122,6 @@ export function AssignmentResearchWorkspace({
           </span>
         </div>
         <Progress value={progress.percent} />
-        <Text size="2" color="gray">
-          Progress counts every required category and available English/Thai name.
-        </Text>
       </Card>
 
       <Tabs.Root

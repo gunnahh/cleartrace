@@ -5,7 +5,7 @@ import { ArrowLeft, Printer, TriangleAlert } from 'lucide-react'
 import { isHttpUrl, legalCaseLabel } from '../../../entities/legal-case'
 import { mediaFindingLabel, type MediaFinding } from '../../../entities/media-finding'
 import { api, assignmentKeys } from '../../../lib/api'
-import { assignmentStatusColor, submissionIssues } from '../../assignments/model'
+import { submissionIssues } from '../../assignments/model'
 
 export function ReportPreview({ assignmentId }: { assignmentId: string }) {
   const q = useQuery({
@@ -53,7 +53,7 @@ export function ReportPreview({ assignmentId }: { assignmentId: string }) {
             disabled={a.status === 'SUBMITTED' || !!issues.length || submit.isPending}
             onClick={() => submit.mutate()}
           >
-            {a.status === 'SUBMITTED' ? 'Submitted' : 'Done'}
+            {a.status === 'SUBMITTED' ? 'Submitted' : 'Submit'}
           </Button>
         </Flex>
       </Flex>
@@ -88,20 +88,14 @@ export function ReportPreview({ assignmentId }: { assignmentId: string }) {
         }}
       >
         <article className="report">
-          <Box asChild p="8" style={{ backgroundColor: 'var(--iris-2)' }}>
+          <Box asChild p="8" pb="5" style={{ backgroundColor: 'var(--iris-3)' }}>
             <header>
-              <Text weight="bold">CONFIDENTIAL RESEARCH REPORT</Text>
-              <Badge
-                size="2"
-                color={assignmentStatusColor(a.status)}
-                style={{ alignSelf: 'flex-start' }}
-              >
-                {a.status === 'SUBMITTED' ? 'Completed' : a.status.replaceAll('_', ' ')}
-              </Badge>
-              <Heading as="h1" size="7">
+              <Heading as="h1" size="7" align="center">
                 {a.nameEnglish}
               </Heading>
-              <Text weight="bold">{a.nameThai}</Text>
+              <Text as="p" weight="bold" align="center">
+                {a.nameThai}
+              </Text>
               <div>
                 <span>
                   <strong>Assignment:</strong> {a.referenceId}
@@ -133,7 +127,7 @@ export function ReportPreview({ assignmentId }: { assignmentId: string }) {
               </ReportDescription>
               <ReportTerm>Registered capital</ReportTerm>
               <ReportDescription>
-                {a.currency} {Number(a.registeredCapital).toLocaleString()}
+                {Number(a.registeredCapital).toLocaleString()} {a.currency}
               </ReportDescription>
             </dl>
           </ReportSection>
@@ -274,7 +268,11 @@ export function ReportPreview({ assignmentId }: { assignmentId: string }) {
                   <div className="row">
                     <Badge>{x.searchLanguage}</Badge>
                     <Badge color={x.result === 'RECORD_FOUND' ? 'green' : 'gray'}>
-                      {x.result.replaceAll('_', ' ')}
+                      {x.result === 'RECORD_FOUND'
+                        ? 'Record found'
+                        : x.result === 'NO_RESULT'
+                          ? 'No result'
+                          : x.result.replaceAll('_', ' ')}
                     </Badge>
                   </div>
                   <strong>{x.sourceName}</strong>

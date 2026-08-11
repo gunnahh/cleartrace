@@ -68,7 +68,7 @@ export function MediaNewsTab({ assignment }: { assignment: Assignment }) {
               {mediaChecks.length > 0 && (
                 <Button onClick={openFindingForm}>
                   <Plus />
-                  Add media finding
+                  Add media
                 </Button>
               )}
             </div>

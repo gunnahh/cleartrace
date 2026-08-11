@@ -55,6 +55,17 @@ beforeEach(() => {
 })
 
 describe('mock search evidence persistence', () => {
+  it('deletes an assignment and keeps a deleted demo assignment removed', async () => {
+    const deletion = api.deleteAssignment('demo-complete')
+    await vi.runAllTimersAsync()
+    await deletion
+
+    const listRequest = api.list()
+    await vi.runAllTimersAsync()
+    const assignments = await listRequest
+    expect(assignments.some((assignment) => assignment.id === 'demo-complete')).toBe(false)
+  })
+
   it('validates and persists evidence, original notes, and English translation', async () => {
     const request = api.addSearchEvidence('assignment-1', {
       ...createSearchEvidenceDefaults({

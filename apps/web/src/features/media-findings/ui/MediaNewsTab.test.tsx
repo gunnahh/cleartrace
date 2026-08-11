@@ -73,7 +73,7 @@ describe('MediaNewsTab', () => {
 
     renderTab(matchedAssignment)
     expect(screen.queryByRole('button', { name: 'Add evidence' })).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Add media finding' }))
+    await user.click(screen.getByRole('button', { name: 'Add media' }))
     await user.type(screen.getByLabelText(/Article title/), 'Example investigation')
     await user.type(screen.getByLabelText(/Publisher/), 'Example News')
     fireEvent.change(screen.getByLabelText(/Publication date/), {

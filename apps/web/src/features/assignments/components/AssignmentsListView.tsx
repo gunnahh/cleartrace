@@ -1,7 +1,21 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { EyeOpenIcon, TrashIcon } from '@radix-ui/react-icons'
 import { Link } from '@tanstack/react-router'
-import { Badge, Button, Card, Heading, Select, Spinner, Text, TextField } from '@radix-ui/themes'
-import { Plus, Search, ArrowRight } from 'lucide-react'
+import {
+  Badge,
+  Box,
+  Button,
+  Card,
+  Flex,
+  Heading,
+  ScrollArea,
+  Select,
+  Spinner,
+  Table,
+  Text,
+  TextField,
+} from '@radix-ui/themes'
+import { Plus, Search } from 'lucide-react'
 import { api, assignmentKeys } from '../../../lib/api'
 import { assignmentStatuses, assignmentStatusColor, formatAssignmentStatus } from '../model'
 const currentTime = new Date('2026-08-09T00:00:00Z').getTime()
@@ -17,7 +31,12 @@ type AssignmentsListViewProps = {
 }
 
 export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsListViewProps) {
+  const queryClient = useQueryClient()
   const q = useQuery({ queryKey: assignmentKeys.list(filters), queryFn: api.list })
+  const deleteAssignment = useMutation({
+    mutationFn: api.deleteAssignment,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: assignmentKeys.all }),
+  })
   const rows = (q.data || []).filter(
     (a) =>
       (!filters.q ||
@@ -64,18 +83,20 @@ export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsLis
           </Card>
         ))}
       </section>
-      <Card className="panel">
-        <div className="filters">
-          <TextField.Root
-            aria-label="Search assignments"
-            placeholder="Search ID or company…"
-            value={filters.q}
-            onChange={(event) => onFiltersChange({ ...filters, q: event.target.value })}
-          >
-            <TextField.Slot>
-              <Search size={16} />
-            </TextField.Slot>
-          </TextField.Root>
+      <Card className="panel" variant="ghost">
+        <Flex direction={{ initial: 'column', sm: 'row' }} gap="3" p="4">
+          <Box width={{ initial: '100%', sm: '320px' }}>
+            <TextField.Root
+              aria-label="Search assignments"
+              placeholder="Search ID or company…"
+              value={filters.q}
+              onChange={(event) => onFiltersChange({ ...filters, q: event.target.value })}
+            >
+              <TextField.Slot>
+                <Search size={16} />
+              </TextField.Slot>
+            </TextField.Root>
+          </Box>
           <Select.Root
             value={filters.status}
             onValueChange={(status) =>
@@ -91,7 +112,12 @@ export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsLis
               ))}
             </Select.Content>
           </Select.Root>
-        </div>
+        </Flex>
+        {deleteAssignment.isError && (
+          <div className="state error" role="alert">
+            Assignment could not be deleted. Please try again.
+          </div>
+        )}
         {q.isPending ? (
           <div className="state">
             <Spinner />
@@ -105,47 +131,89 @@ export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsLis
             <Text color="gray">Create an assignment or change your filters.</Text>
           </div>
         ) : (
-          <div className="tablewrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Assignment</th>
-                  <th>Subject company</th>
-                  <th>Research scope</th>
-                  <th>Due date</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((a) => (
-                  <tr key={a.id}>
-                    <td>
-                      <strong>{a.referenceId}</strong>
-                    </td>
-                    <td>
-                      {a.nameEnglish}
-                      <small>{a.nameThai}</small>
-                    </td>
-                    <td>{a.categories.length} categories</td>
-                    <td>{new Date(a.dueDate).toLocaleDateString()}</td>
-                    <td>
-                      <Badge color={assignmentStatusColor(a.status)}>
-                        {formatAssignmentStatus(a.status)}
-                      </Badge>
-                    </td>
-                    <td>
-                      <Button asChild variant="ghost">
-                        <Link to="/assignments/$assignmentId" params={{ assignmentId: a.id }}>
-                          Open <ArrowRight />
-                        </Link>
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Box px="4">
+            <ScrollArea type="auto" scrollbars="horizontal">
+              <Box minWidth="800px">
+                <Table.Root>
+                  <Table.Header style={{ backgroundColor: 'var(--iris-3)' }}>
+                    <Table.Row>
+                      <Table.ColumnHeaderCell justify="center">Assignment</Table.ColumnHeaderCell>
+                      <Table.ColumnHeaderCell justify="center">
+                        Subject company
+                      </Table.ColumnHeaderCell>
+                      <Table.ColumnHeaderCell justify="center">
+                        Research scope
+                      </Table.ColumnHeaderCell>
+                      <Table.ColumnHeaderCell justify="center">Due date</Table.ColumnHeaderCell>
+                      <Table.ColumnHeaderCell justify="center">Status</Table.ColumnHeaderCell>
+                      <Table.ColumnHeaderCell justify="center">Action</Table.ColumnHeaderCell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {rows.map((a) => (
+                      <Table.Row key={a.id}>
+                        <Table.Cell justify="center">
+                          <strong>{a.referenceId}</strong>
+                        </Table.Cell>
+                        <Table.Cell justify="center">
+                          {a.nameEnglish}
+                          <small>{a.nameThai}</small>
+                        </Table.Cell>
+                        <Table.Cell justify="center">{a.categories.length} categories</Table.Cell>
+                        <Table.Cell justify="center">
+                          {new Date(a.dueDate).toLocaleDateString()}
+                        </Table.Cell>
+                        <Table.Cell justify="center">
+                          <Badge color={assignmentStatusColor(a.status)}>
+                            {formatAssignmentStatus(a.status)}
+                          </Badge>
+                        </Table.Cell>
+                        <Table.Cell justify="center">
+                          <Flex align="center" justify="center" gap="2">
+                            <Button asChild size="1" variant="soft">
+                              <Link
+                                to="/assignments/$assignmentId"
+                                params={{ assignmentId: a.id }}
+                                aria-label={`Open assignment ${a.referenceId}`}
+                                title="Open assignment"
+                              >
+                                <EyeOpenIcon />
+                              </Link>
+                            </Button>
+                            <Button
+                              size="1"
+                              color="red"
+                              variant="soft"
+                              disabled={
+                                a.status === 'SUBMITTED' ||
+                                (deleteAssignment.isPending && deleteAssignment.variables === a.id)
+                              }
+                              aria-label={`Delete assignment ${a.referenceId}`}
+                              title={
+                                a.status === 'SUBMITTED'
+                                  ? 'Submitted assignments cannot be deleted'
+                                  : 'Delete assignment'
+                              }
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `Delete assignment ${a.referenceId} for ${a.nameEnglish}?`,
+                                  )
+                                )
+                                  deleteAssignment.mutate(a.id)
+                              }}
+                            >
+                              <TrashIcon />
+                            </Button>
+                          </Flex>
+                        </Table.Cell>
+                      </Table.Row>
+                    ))}
+                  </Table.Body>
+                </Table.Root>
+              </Box>
+            </ScrollArea>
+          </Box>
         )}
       </Card>
     </div>

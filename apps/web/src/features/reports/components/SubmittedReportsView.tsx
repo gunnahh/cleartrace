@@ -1,6 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Badge, Button, Card, Flex, Heading, Spinner, Text } from '@radix-ui/themes'
+import {
+  Badge,
+  Box,
+  Button,
+  Card,
+  Flex,
+  Heading,
+  ScrollArea,
+  Spinner,
+  Text,
+} from '@radix-ui/themes'
 import { ArrowRight, FileCheck2 } from 'lucide-react'
 import { api, assignmentKeys } from '../../../lib/api'
 
@@ -57,50 +67,52 @@ export function SubmittedReportsView() {
             </Button>
           </div>
         ) : (
-          <div className="tablewrap">
-            <table>
-              <caption className="sr-only">Submitted research reports</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Report</th>
-                  <th scope="col">Subject company</th>
-                  <th scope="col">Submitted</th>
-                  <th scope="col">Evidence</th>
-                  <th scope="col">Findings</th>
-                  <th scope="col">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reports.map((report) => (
-                  <tr key={report.id}>
-                    <td>
-                      <strong>{report.referenceId}</strong>
-                    </td>
-                    <td>
-                      {report.nameEnglish}
-                      <small>{report.nameThai}</small>
-                    </td>
-                    <td>{formatDate(report.submittedAt ?? report.createdAt)}</td>
-                    <td>{report.attempts.length} searches</td>
-                    <td>
-                      {report.cases.length} legal · {report.media.length} media
-                    </td>
-                    <td>
-                      <Button asChild variant="soft">
-                        <Link
-                          to="/assignments/$assignmentId/report"
-                          params={{ assignmentId: report.id }}
-                          aria-label={`View submitted report ${report.referenceId}`}
-                        >
-                          View report <ArrowRight />
-                        </Link>
-                      </Button>
-                    </td>
+          <ScrollArea type="auto" scrollbars="horizontal">
+            <Box asChild minWidth="800px">
+              <table>
+                <caption className="sr-only">Submitted research reports</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Report</th>
+                    <th scope="col">Subject company</th>
+                    <th scope="col">Submitted</th>
+                    <th scope="col">Evidence</th>
+                    <th scope="col">Findings</th>
+                    <th scope="col">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {reports.map((report) => (
+                    <tr key={report.id}>
+                      <td>
+                        <strong>{report.referenceId}</strong>
+                      </td>
+                      <td>
+                        {report.nameEnglish}
+                        <small>{report.nameThai}</small>
+                      </td>
+                      <td>{formatDate(report.submittedAt ?? report.createdAt)}</td>
+                      <td>{report.attempts.length} searches</td>
+                      <td>
+                        {report.cases.length} legal · {report.media.length} media
+                      </td>
+                      <td>
+                        <Button asChild variant="soft">
+                          <Link
+                            to="/assignments/$assignmentId/report"
+                            params={{ assignmentId: report.id }}
+                            aria-label={`View submitted report ${report.referenceId}`}
+                          >
+                            View report <ArrowRight />
+                          </Link>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Box>
+          </ScrollArea>
         )}
       </Card>
     </div>

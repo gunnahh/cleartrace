@@ -75,13 +75,13 @@ export function MediaFindingDialog({
           <Dialog.Content ref={setPortalContainer} className="dialog media-dialog">
             <div className="sectionhead">
               <div>
-                <Dialog.Title>{finding ? 'Edit media finding' : 'Add media finding'}</Dialog.Title>
+                <Dialog.Title>{finding ? 'Edit media' : 'Add media'}</Dialog.Title>
                 <Dialog.Description>
                   Capture the article, summaries, source, and supporting document.
                 </Dialog.Description>
               </div>
               <Dialog.Close asChild>
-                <Button variant="ghost" aria-label="Close media finding form">
+                <Button variant="ghost" aria-label="Close media form">
                   <X />
                 </Button>
               </Dialog.Close>

@@ -174,18 +174,6 @@ nav > a:last-child {
   padding: 0;
   overflow: hidden;
 }
-.filters {
-  padding: 16px;
-  display: flex;
-  gap: 10px;
-  border-bottom: 1px solid #ececf2;
-}
-.filters > div:first-child {
-  width: 320px;
-}
-.tablewrap {
-  overflow: auto;
-}
 table {
   width: 100%;
   border-collapse: collapse;
@@ -988,9 +976,6 @@ legend {
     flex-wrap: wrap;
     justify-content: flex-end;
   }
-  .tablewrap table {
-    min-width: 800px;
-  }
 }
 @media (max-width: 600px) {
   .pagehead {
@@ -1029,12 +1014,6 @@ legend {
   }
   .steps li span {
     font-size: 12px;
-  }
-  .filters {
-    flex-direction: column;
-  }
-  .filters > div:first-child {
-    width: 100%;
   }
   .evidencerow {
     grid-template-columns: 1fr;

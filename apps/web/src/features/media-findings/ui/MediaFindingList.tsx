@@ -26,7 +26,9 @@ export function MediaFindingList({
     <section>
       <div className="media-section-heading">
         <Heading size="4">{title}</Heading>
-        <Badge color={negative ? 'red' : 'gray'}>{findings.length} findings</Badge>
+        <Badge color={negative ? 'red' : 'gray'}>
+          {findings.length} {findings.length === 1 ? 'result' : 'results'}
+        </Badge>
       </div>
       {findings.length === 0 ? (
         <Text color="gray">No findings recorded yet.</Text>
