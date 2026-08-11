@@ -9,11 +9,7 @@ import { api, assignmentKeys } from '../../../lib/api'
 import { assignmentStatusColor, completion, formatAssignmentStatus } from '../../assignments/model'
 import { CaseDetailsTab } from '../../legal-cases'
 import { MediaNewsTab } from '../../media-findings'
-import {
-  LegalMatchesTab,
-  preferredLegalEvidencePreset,
-  SearchEvidenceDialog,
-} from '../../search-evidence'
+import { LegalMatchesTab, SearchEvidenceDialog } from '../../search-evidence'
 import type { AssignmentWorkspaceTab } from '../model/assignment-workspace-tab'
 import { CheckedPartiesTab } from '../ui/CheckedPartiesTab'
 
@@ -108,8 +104,8 @@ export function AssignmentResearchWorkspace({
           <Badge size="2" color={assignmentStatusColor(assignment.status)}>
             {formatAssignmentStatus(assignment.status)}
           </Badge>
-          <Badge color="green" variant="soft">
-            Changes save automatically
+          <Badge size="2" color="green" variant="soft">
+            Auto saved
           </Badge>
           <Button asChild>
             <Link to="/assignments/$assignmentId/report" params={{ assignmentId }}>
@@ -172,7 +168,7 @@ export function AssignmentResearchWorkspace({
           />
         </Tabs.Content>
         <Tabs.Content value="media">
-          <MediaNewsTab assignment={assignment} onAddEvidence={openEvidence} />
+          <MediaNewsTab assignment={assignment} />
         </Tabs.Content>
       </Tabs.Root>
 

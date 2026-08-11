@@ -39,8 +39,7 @@ afterEach(() => {
 
 describe('MediaNewsTab', () => {
   it('opens the evidence prerequisite directly when there is no media match', () => {
-    const onAddEvidence = vi.fn()
-    renderTab(assignment, onAddEvidence)
+    renderTab(assignment)
 
     expect(screen.getByRole('heading', { name: 'Record a media match first' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Add evidence' })).not.toBeInTheDocument()
@@ -72,8 +71,7 @@ describe('MediaNewsTab', () => {
       ],
     } as Assignment
 
-    const onAddEvidence = vi.fn()
-    renderTab(matchedAssignment, onAddEvidence)
+    renderTab(matchedAssignment)
     expect(screen.queryByRole('button', { name: 'Add evidence' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Add media finding' }))
     await user.type(screen.getByLabelText(/Article title/), 'Example investigation')
@@ -103,12 +101,12 @@ describe('MediaNewsTab', () => {
   })
 })
 
-function renderTab(item: Assignment, onAddEvidence = vi.fn()) {
+function renderTab(item: Assignment) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
       <Theme>
-        <MediaNewsTab assignment={item} onAddEvidence={onAddEvidence} />
+        <MediaNewsTab assignment={item} />
       </Theme>
     </QueryClientProvider>,
   )

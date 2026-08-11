@@ -110,20 +110,12 @@ describe('CaseDetailsTab', () => {
   })
 })
 
-function renderTab(
-  item: Assignment,
-  onReviewLegalMatches = vi.fn(),
-  onAddLegalEvidence?: () => void,
-) {
+function renderTab(item: Assignment, onReviewLegalMatches = vi.fn()) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
       <Theme>
-        <CaseDetailsTab
-          assignment={item}
-          onAddLegalEvidence={onAddLegalEvidence}
-          onReviewLegalMatches={onReviewLegalMatches}
-        />
+        <CaseDetailsTab assignment={item} onReviewLegalMatches={onReviewLegalMatches} />
       </Theme>
     </QueryClientProvider>,
   )

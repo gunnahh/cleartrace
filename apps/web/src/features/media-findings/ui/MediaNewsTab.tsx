@@ -2,22 +2,14 @@ import { useState } from 'react'
 import { Button, Card, Heading, Text } from '@radix-ui/themes'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Newspaper, Plus } from 'lucide-react'
-import type { SearchEvidencePreset } from '../../../entities/search-attempt'
 import type { MediaFinding } from '../../../entities/media-finding'
 import { api, assignmentKeys } from '../../../lib/api'
 import type { Assignment } from '../../assignments/model'
 import { getMediaCheckMatches, hasConfiguredMediaCategory } from '../model/media-checks'
-import { preferredMediaEvidencePreset } from '../model/media-evidence-preset'
 import { MediaFindingDialog } from './MediaFindingDialog'
 import { MediaFindingList } from './MediaFindingList'
 
-export function MediaNewsTab({
-  assignment,
-  onAddEvidence,
-}: {
-  assignment: Assignment
-  onAddEvidence: (preset: SearchEvidencePreset) => void
-}) {
+export function MediaNewsTab({ assignment }: { assignment: Assignment }) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingFinding, setEditingFinding] = useState<MediaFinding | null>(null)
   const [announcement, setAnnouncement] = useState('')

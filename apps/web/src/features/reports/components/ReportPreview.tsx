@@ -91,7 +91,11 @@ export function ReportPreview({ assignmentId }: { assignmentId: string }) {
           <Box asChild p="8" style={{ backgroundColor: 'var(--iris-2)' }}>
             <header>
               <Text weight="bold">CONFIDENTIAL RESEARCH REPORT</Text>
-              <Badge color={assignmentStatusColor(a.status)} style={{ alignSelf: 'flex-start' }}>
+              <Badge
+                size="2"
+                color={assignmentStatusColor(a.status)}
+                style={{ alignSelf: 'flex-start' }}
+              >
                 {a.status === 'SUBMITTED' ? 'Completed' : a.status.replaceAll('_', ' ')}
               </Badge>
               <Heading as="h1" size="7">
