@@ -6,7 +6,7 @@ import { Badge, Button, Card, Heading, Progress, Spinner, Text } from '@radix-ui
 import { ArrowLeft } from 'lucide-react'
 import type { SearchAttempt, SearchEvidencePreset } from '../../../entities/search-attempt'
 import { api, assignmentKeys } from '../../../lib/api'
-import { completion, formatAssignmentStatus } from '../../assignments/model'
+import { assignmentStatusColor, completion, formatAssignmentStatus } from '../../assignments/model'
 import { CaseDetailsTab } from '../../legal-cases'
 import { MediaNewsTab } from '../../media-findings'
 import {
@@ -105,7 +105,9 @@ export function AssignmentResearchWorkspace({
           <Text color="gray">{assignment.nameThai}</Text>
         </div>
         <div className="actions">
-          <Badge size="2">{formatAssignmentStatus(assignment.status)}</Badge>
+          <Badge size="2" color={assignmentStatusColor(assignment.status)}>
+            {formatAssignmentStatus(assignment.status)}
+          </Badge>
           <Badge color="green" variant="soft">
             Changes save automatically
           </Badge>
@@ -166,7 +168,6 @@ export function AssignmentResearchWorkspace({
         <Tabs.Content value="cases">
           <CaseDetailsTab
             assignment={assignment}
-            onAddLegalEvidence={() => openEvidence(preferredLegalEvidencePreset(assignment))}
             onReviewLegalMatches={() => onTabChange('legal')}
           />
         </Tabs.Content>

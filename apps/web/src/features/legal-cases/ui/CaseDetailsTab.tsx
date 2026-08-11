@@ -43,11 +43,9 @@ type LegalCheckMatch = {
 
 export function CaseDetailsTab({
   assignment,
-  onAddLegalEvidence,
   onReviewLegalMatches,
 }: {
   assignment: Assignment
-  onAddLegalEvidence?: () => void
   onReviewLegalMatches: () => void
 }) {
   const [open, setOpen] = useState(false)
@@ -142,12 +140,6 @@ export function CaseDetailsTab({
           </div>
           {assignment.status !== 'SUBMITTED' && legalChecks.length > 0 && (
             <div className="actions">
-              {onAddLegalEvidence && (
-                <Button variant="soft" onClick={onAddLegalEvidence}>
-                  <Plus />
-                  Add evidence
-                </Button>
-              )}
               <Button onClick={() => openCaseForm()}>
                 <Plus />
                 Add legal case
@@ -273,12 +265,6 @@ export function CaseDetailsTab({
             </Text>
             {assignment.status !== 'SUBMITTED' && (
               <div className="case-empty-actions">
-                {onAddLegalEvidence && (
-                  <Button onClick={onAddLegalEvidence}>
-                    <Plus />
-                    Add legal evidence
-                  </Button>
-                )}
                 <Button variant="soft" onClick={onReviewLegalMatches}>
                   Review legal matches
                 </Button>

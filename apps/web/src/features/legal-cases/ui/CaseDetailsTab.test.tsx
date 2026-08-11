@@ -39,14 +39,12 @@ afterEach(() => {
 describe('CaseDetailsTab', () => {
   it('guides the researcher to record a legal match before adding a case', async () => {
     const onReviewLegalMatches = vi.fn()
-    const onAddLegalEvidence = vi.fn()
     const user = userEvent.setup()
 
-    renderTab(assignment, onReviewLegalMatches, onAddLegalEvidence)
+    renderTab(assignment, onReviewLegalMatches)
 
     expect(screen.getByRole('heading', { name: 'Record a legal match first' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Add legal evidence' }))
-    expect(onAddLegalEvidence).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('button', { name: 'Add legal evidence' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Review legal matches' }))
     expect(onReviewLegalMatches).toHaveBeenCalledOnce()
   })
@@ -74,10 +72,8 @@ describe('CaseDetailsTab', () => {
       ],
     } as Assignment
 
-    const onAddLegalEvidence = vi.fn()
-    renderTab(matchedAssignment, vi.fn(), onAddLegalEvidence)
-    await user.click(screen.getByRole('button', { name: 'Add evidence' }))
-    expect(onAddLegalEvidence).toHaveBeenCalledOnce()
+    renderTab(matchedAssignment, vi.fn())
+    expect(screen.queryByRole('button', { name: 'Add evidence' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Add first case' }))
 
     expect(screen.getByRole('dialog', { name: 'Add legal case' })).toBeInTheDocument()

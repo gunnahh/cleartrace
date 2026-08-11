@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   assignmentSchema,
+  assignmentStatusColor,
   evidenceSchema,
   completion,
   formatAssignmentStatus,
@@ -16,6 +17,17 @@ describe('formatAssignmentStatus', () => {
     ['SUBMITTED', 'Completed'],
   ] as const)('formats %s as %s', (status, label) => {
     expect(formatAssignmentStatus(status)).toBe(label)
+  })
+})
+
+describe('assignmentStatusColor', () => {
+  it.each([
+    ['DRAFT', 'gray'],
+    ['IN_PROGRESS', 'blue'],
+    ['READY_TO_SUBMIT', 'amber'],
+    ['SUBMITTED', 'green'],
+  ] as const)('maps %s to %s', (status, color) => {
+    expect(assignmentStatusColor(status)).toBe(color)
   })
 })
 

@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { Badge, Button, Card, Heading, Select, Spinner, Text, TextField } from '@radix-ui/themes'
 import { Plus, Search, ArrowRight } from 'lucide-react'
 import { api, assignmentKeys } from '../../../lib/api'
-import { assignmentStatuses, formatAssignmentStatus } from '../model'
+import { assignmentStatuses, assignmentStatusColor, formatAssignmentStatus } from '../model'
 const currentTime = new Date('2026-08-09T00:00:00Z').getTime()
 
 export type AssignmentFilters = {
@@ -130,7 +130,7 @@ export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsLis
                     <td>{a.categories.length} categories</td>
                     <td>{new Date(a.dueDate).toLocaleDateString()}</td>
                     <td>
-                      <Badge color={a.status === 'SUBMITTED' ? 'green' : 'iris'}>
+                      <Badge color={assignmentStatusColor(a.status)}>
                         {formatAssignmentStatus(a.status)}
                       </Badge>
                     </td>

@@ -73,13 +73,6 @@ export function MediaNewsTab({
           </div>
           {canEdit && mediaCategoryConfigured && (
             <div className="actions">
-              <Button
-                variant="soft"
-                onClick={() => onAddEvidence(preferredMediaEvidencePreset(assignment))}
-              >
-                <Plus />
-                Add evidence
-              </Button>
               {mediaChecks.length > 0 && (
                 <Button onClick={openFindingForm}>
                   <Plus />

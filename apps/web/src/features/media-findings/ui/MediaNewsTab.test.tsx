@@ -38,19 +38,12 @@ afterEach(() => {
 })
 
 describe('MediaNewsTab', () => {
-  it('opens the evidence prerequisite directly when there is no media match', async () => {
+  it('opens the evidence prerequisite directly when there is no media match', () => {
     const onAddEvidence = vi.fn()
-    const user = userEvent.setup()
     renderTab(assignment, onAddEvidence)
 
     expect(screen.getByRole('heading', { name: 'Record a media match first' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Add evidence' }))
-
-    expect(onAddEvidence).toHaveBeenCalledWith({
-      targetId: 'subject-1',
-      category: 'MEDIA_NEGATIVE',
-      result: 'RECORD_FOUND',
-    })
+    expect(screen.queryByRole('button', { name: 'Add evidence' })).not.toBeInTheDocument()
   })
 
   it('submits a complete finding linked to a recorded media match', async () => {
@@ -81,12 +74,7 @@ describe('MediaNewsTab', () => {
 
     const onAddEvidence = vi.fn()
     renderTab(matchedAssignment, onAddEvidence)
-    await user.click(screen.getByRole('button', { name: 'Add evidence' }))
-    expect(onAddEvidence).toHaveBeenCalledWith({
-      targetId: 'subject-1',
-      category: 'MEDIA_NEGATIVE',
-      result: 'RECORD_FOUND',
-    })
+    expect(screen.queryByRole('button', { name: 'Add evidence' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Add media finding' }))
     await user.type(screen.getByLabelText(/Article title/), 'Example investigation')
     await user.type(screen.getByLabelText(/Publisher/), 'Example News')

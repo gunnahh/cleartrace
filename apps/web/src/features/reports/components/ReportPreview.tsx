@@ -5,7 +5,7 @@ import { ArrowLeft, Printer, TriangleAlert } from 'lucide-react'
 import { isHttpUrl, legalCaseLabel } from '../../../entities/legal-case'
 import { mediaFindingLabel, type MediaFinding } from '../../../entities/media-finding'
 import { api, assignmentKeys } from '../../../lib/api'
-import { submissionIssues } from '../../assignments/model'
+import { assignmentStatusColor, submissionIssues } from '../../assignments/model'
 
 export function ReportPreview({ assignmentId }: { assignmentId: string }) {
   const q = useQuery({
@@ -91,6 +91,9 @@ export function ReportPreview({ assignmentId }: { assignmentId: string }) {
           <Box asChild p="8" style={{ backgroundColor: 'var(--iris-2)' }}>
             <header>
               <Text weight="bold">CONFIDENTIAL RESEARCH REPORT</Text>
+              <Badge color={assignmentStatusColor(a.status)} style={{ alignSelf: 'flex-start' }}>
+                {a.status === 'SUBMITTED' ? 'Completed' : a.status.replaceAll('_', ' ')}
+              </Badge>
               <Heading as="h1" size="7">
                 {a.nameEnglish}
               </Heading>

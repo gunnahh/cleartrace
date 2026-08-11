@@ -43,6 +43,19 @@ export function formatAssignmentStatus(status: AssignmentStatus) {
   return assignmentStatusLabels[status]
 }
 
+export function assignmentStatusColor(status: AssignmentStatus) {
+  switch (status) {
+    case 'SUBMITTED':
+      return 'green'
+    case 'READY_TO_SUBMIT':
+      return 'amber'
+    case 'IN_PROGRESS':
+      return 'blue'
+    default:
+      return 'gray'
+  }
+}
+
 // Map UI party types to backend target types
 export function mapPartyTypeToBackend(
   partyType: PartyType,
