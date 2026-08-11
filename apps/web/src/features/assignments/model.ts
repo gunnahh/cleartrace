@@ -114,6 +114,7 @@ export type Assignment = AssignmentInput & {
   referenceId: string
   status: AssignmentStatus
   createdAt: string
+  submittedAt?: string
   targets: Target[]
   attempts: SearchAttempt[]
   cases: LegalCase[]

@@ -261,6 +261,7 @@ function createCompleteMockAttempts(): SearchAttempt[] {
           target.id === 'mock-subject' && category === 'MEDIA_NEGATIVE' && searchLanguage === 'EN'
         const result: SearchResult = isLegalMatch || isMediaMatch ? 'RECORD_FOUND' : 'NO_RESULT'
         const query = searchLanguage === 'EN' ? target.en : target.th
+        const evidenceName = `mock-search-${index}.png`
         return {
           id: `mock-attempt-${index}`,
           targetId: target.id,
@@ -277,7 +278,21 @@ function createCompleteMockAttempts(): SearchAttempt[] {
           searchedAt: '2026-08-10',
           result,
           reason: '',
-          evidence: [`mock-search-${index}.png`],
+          evidence: [evidenceName],
+          evidencePreviews: [
+            {
+              name: evidenceName,
+              dataUrl: createMockScreenshot({
+                sourceName: category.startsWith('MEDIA')
+                  ? 'Example News Archive'
+                  : 'Example Public Records Portal',
+                query,
+                category,
+                result,
+                searchLanguage,
+              }),
+            },
+          ],
           notesOriginal: searchLanguage === 'TH' ? `ผลการค้นหาตัวอย่างสำหรับ ${query}` : '',
           translationEnglish: searchLanguage === 'TH' ? `Mock search result for ${target.en}` : '',
           createdAt: `2026-08-10T02:${String(index).padStart(2, '0')}:00.000Z`,
@@ -320,6 +335,27 @@ function normalizeSearchAttempt(
   const result = isSearchResult(value.result) ? value.result : 'NO_RESULT'
   const searchLanguage = isSearchLanguage(value.searchLanguage) ? value.searchLanguage : 'EN'
   const defaults = createSearchEvidenceDefaults({ category, result, searchLanguage })
+  const evidence = Array.isArray(value.evidence)
+    ? value.evidence.filter((item): item is string => typeof item === 'string')
+    : []
+  const storedPreviews = Array.isArray(value.evidencePreviews)
+    ? value.evidencePreviews.filter(isEvidencePreview)
+    : []
+  const evidencePreviews =
+    storedPreviews.length > 0 || assignment.id !== 'demo-complete'
+      ? storedPreviews
+      : evidence
+          .filter((name) => /^mock-search-\d+\.png$/i.test(name))
+          .map((name) => ({
+            name,
+            dataUrl: createMockScreenshot({
+              sourceName: stringValue(value.sourceName),
+              query: stringValue(value.searchQuery),
+              category,
+              result,
+              searchLanguage,
+            }),
+          }))
   return {
     ...defaults,
     id: stringValue(value.id) || `legacy-evidence-${assignment.id}-${index}`,
@@ -333,12 +369,8 @@ function normalizeSearchAttempt(
     searchedAt: stringValue(value.searchedAt),
     result,
     reason: stringValue(value.reason),
-    evidence: Array.isArray(value.evidence)
-      ? value.evidence.filter((item): item is string => typeof item === 'string')
-      : [],
-    evidencePreviews: Array.isArray(value.evidencePreviews)
-      ? value.evidencePreviews.filter(isEvidencePreview)
-      : [],
+    evidence,
+    evidencePreviews,
     notesOriginal: stringValue(value.notesOriginal),
     translationEnglish: stringValue(value.translationEnglish),
     createdAt: stringValue(value.createdAt) || assignment.createdAt || '',
@@ -661,6 +693,7 @@ export const api = {
     const a = all.find((x) => x.id === id)
     if (!a) throw Error('Not found')
     a.status = 'SUBMITTED'
+    a.submittedAt = new Date().toISOString()
     save(all)
     return a
   },
@@ -706,6 +739,43 @@ function isEvidencePreview(value: unknown): value is { name: string; dataUrl: st
     typeof preview.dataUrl === 'string' &&
     preview.dataUrl.startsWith('data:image/')
   )
+}
+
+function createMockScreenshot({
+  sourceName,
+  query,
+  category,
+  result,
+  searchLanguage,
+}: {
+  sourceName: string
+  query: string
+  category: SearchCategory
+  result: SearchResult
+  searchLanguage: SearchLanguage
+}) {
+  const resultLabel = result === 'RECORD_FOUND' ? '1 matching record found' : 'No records found'
+  const resultColor = result === 'RECORD_FOUND' ? '#18864b' : '#667085'
+  const safe = (text: string) =>
+    text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+    <rect width="1200" height="720" fill="#f5f6f8"/>
+    <rect x="48" y="38" width="1104" height="644" rx="12" fill="white" stroke="#d8dce3"/>
+    <rect x="48" y="38" width="1104" height="76" rx="12" fill="#292a3a"/>
+    <text x="82" y="86" fill="white" font-family="Arial, sans-serif" font-size="26" font-weight="700">${safe(sourceName)}</text>
+    <text x="82" y="164" fill="#667085" font-family="Arial, sans-serif" font-size="18">SEARCH CATEGORY</text>
+    <text x="82" y="197" fill="#252536" font-family="Arial, sans-serif" font-size="24" font-weight="700">${safe(category.replaceAll('_', ' '))}</text>
+    <text x="1010" y="185" fill="#667085" font-family="Arial, sans-serif" font-size="20">${searchLanguage}</text>
+    <rect x="82" y="235" width="1036" height="64" rx="8" fill="#fafafd" stroke="#cfd3da"/>
+    <text x="106" y="276" fill="#252536" font-family="Arial, sans-serif" font-size="22">${safe(query)}</text>
+    <rect x="82" y="345" width="1036" height="190" rx="10" fill="#fafafa" stroke="#e1e3e8"/>
+    <circle cx="126" cy="397" r="13" fill="${resultColor}"/>
+    <text x="158" y="406" fill="${resultColor}" font-family="Arial, sans-serif" font-size="28" font-weight="700">${resultLabel}</text>
+    <text x="126" y="459" fill="#667085" font-family="Arial, sans-serif" font-size="20">Search completed on 10 August 2026</text>
+    <text x="126" y="497" fill="#667085" font-family="Arial, sans-serif" font-size="18">Fictional screenshot generated for ClearTrace demonstration.</text>
+    <text x="82" y="631" fill="#98a2b3" font-family="Arial, sans-serif" font-size="16">DEMO EVIDENCE · NOT A REAL SEARCH RESULT</text>
+  </svg>`
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 }
 
 function uniqueMediaChecks(attempts: SearchAttempt[]) {
