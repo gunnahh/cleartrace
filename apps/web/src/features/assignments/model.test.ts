@@ -3,9 +3,22 @@ import {
   assignmentSchema,
   evidenceSchema,
   completion,
+  formatAssignmentStatus,
   submissionIssues,
   type Assignment,
 } from './model'
+
+describe('formatAssignmentStatus', () => {
+  it.each([
+    ['DRAFT', 'Draft'],
+    ['IN_PROGRESS', 'In progress'],
+    ['READY_TO_SUBMIT', 'Ready to submit'],
+    ['SUBMITTED', 'Completed'],
+  ] as const)('formats %s as %s', (status, label) => {
+    expect(formatAssignmentStatus(status)).toBe(label)
+  })
+})
+
 describe('conditional evidence validation', () => {
   const base = {
     targetId: 't',

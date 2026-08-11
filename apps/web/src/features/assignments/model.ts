@@ -29,7 +29,19 @@ export type PartyType = (typeof partyTypes)[number]
 
 export const categories = searchCategories
 export type Category = SearchCategory
-export type AssignmentStatus = 'DRAFT' | 'IN_PROGRESS' | 'READY_TO_SUBMIT' | 'SUBMITTED'
+export const assignmentStatuses = ['DRAFT', 'IN_PROGRESS', 'READY_TO_SUBMIT', 'SUBMITTED'] as const
+export type AssignmentStatus = (typeof assignmentStatuses)[number]
+
+const assignmentStatusLabels: Record<AssignmentStatus, string> = {
+  DRAFT: 'Draft',
+  IN_PROGRESS: 'In progress',
+  READY_TO_SUBMIT: 'Ready to submit',
+  SUBMITTED: 'Completed',
+}
+
+export function formatAssignmentStatus(status: AssignmentStatus) {
+  return assignmentStatusLabels[status]
+}
 
 // Map UI party types to backend target types
 export function mapPartyTypeToBackend(

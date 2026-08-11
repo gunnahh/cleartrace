@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { Badge, Button, Card, Heading, Select, Spinner, Text, TextField } from '@radix-ui/themes'
 import { Plus, Search, ArrowRight } from 'lucide-react'
 import { api, assignmentKeys } from '../../../lib/api'
+import { assignmentStatuses, formatAssignmentStatus } from '../model'
 const currentTime = new Date('2026-08-09T00:00:00Z').getTime()
 
 export type AssignmentFilters = {
@@ -83,9 +84,9 @@ export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsLis
           >
             <Select.Trigger aria-label="Filter by status" />
             <Select.Content>
-              {['ALL', 'DRAFT', 'IN_PROGRESS', 'READY_TO_SUBMIT', 'SUBMITTED'].map((x) => (
+              {(['ALL', ...assignmentStatuses] as const).map((x) => (
                 <Select.Item key={x} value={x}>
-                  {x === 'ALL' ? 'All statuses' : x.replaceAll('_', ' ')}
+                  {x === 'ALL' ? 'All statuses' : formatAssignmentStatus(x)}
                 </Select.Item>
               ))}
             </Select.Content>
@@ -130,7 +131,7 @@ export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsLis
                     <td>{new Date(a.dueDate).toLocaleDateString()}</td>
                     <td>
                       <Badge color={a.status === 'SUBMITTED' ? 'green' : 'iris'}>
-                        {a.status.replaceAll('_', ' ')}
+                        {formatAssignmentStatus(a.status)}
                       </Badge>
                     </td>
                     <td>

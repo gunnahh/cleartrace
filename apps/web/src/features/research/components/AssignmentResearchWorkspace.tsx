@@ -6,7 +6,7 @@ import { Badge, Button, Card, Heading, Progress, Spinner, Text } from '@radix-ui
 import { ArrowLeft } from 'lucide-react'
 import type { SearchAttempt, SearchEvidencePreset } from '../../../entities/search-attempt'
 import { api, assignmentKeys } from '../../../lib/api'
-import { completion } from '../../assignments/model'
+import { completion, formatAssignmentStatus } from '../../assignments/model'
 import { CaseDetailsTab } from '../../legal-cases'
 import { MediaNewsTab } from '../../media-findings'
 import {
@@ -105,7 +105,7 @@ export function AssignmentResearchWorkspace({
           <Text color="gray">{assignment.nameThai}</Text>
         </div>
         <div className="actions">
-          <Badge size="2">{assignment.status.replaceAll('_', ' ')}</Badge>
+          <Badge size="2">{formatAssignmentStatus(assignment.status)}</Badge>
           <Badge color="green" variant="soft">
             Changes save automatically
           </Badge>
