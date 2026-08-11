@@ -7,16 +7,17 @@ export const authApi = {
   register: (input: AuthInput) => request('/auth/register', input),
   forgotPassword: (email: string) => request('/auth/forgot-password', { email }),
   logout: () => request('/auth/logout'),
+  me: () => request('/auth/me', undefined, 'GET'),
 }
 
-async function request(path: string, body?: unknown) {
+async function request(path: string, body?: unknown, method = 'POST') {
   let response: Response
   try {
     response = await fetch(`${API_URL}${path}`, {
-      method: 'POST',
+      method,
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
     })
   } catch {
     throw new Error('Authentication service is unavailable. Please try again shortly.')

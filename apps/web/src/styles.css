@@ -947,10 +947,6 @@ legend {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
 }
-:focus-visible {
-  outline: 3px solid var(--iris-8);
-  outline-offset: 2px;
-}
 @media (max-width: 850px) {
   .app {
     display: block;
