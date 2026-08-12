@@ -55,6 +55,32 @@ beforeEach(() => {
 })
 
 describe('mock search evidence persistence', () => {
+  it('provides 20 additional assignments covering the main test scenarios', async () => {
+    const request = api.list()
+    await vi.runAllTimersAsync()
+    const assignments = await request
+    const samples = assignments.filter((assignment) => assignment.id.startsWith('demo-sample-'))
+
+    expect(samples).toHaveLength(20)
+    expect(new Set(samples.map((assignment) => assignment.status))).toEqual(
+      new Set(['DRAFT', 'IN_PROGRESS', 'READY_TO_SUBMIT', 'SUBMITTED']),
+    )
+    expect(new Set(samples.flatMap((assignment) => assignment.categories))).toEqual(
+      new Set(['LITIGATION', 'BANKRUPTCY', 'MEDIA_POSITIVE_NEUTRAL', 'MEDIA_NEGATIVE']),
+    )
+    expect(
+      new Set(samples.flatMap((assignment) => assignment.attempts.map((item) => item.result))),
+    ).toEqual(new Set(['RECORD_FOUND', 'NO_RESULT', 'SOURCE_UNAVAILABLE']))
+    expect(samples.some((assignment) => assignment.attempts.length === 0)).toBe(true)
+    expect(
+      samples.some((assignment) =>
+        assignment.attempts.some(
+          (item) => item.result === 'RECORD_FOUND' && item.category === 'MEDIA_POSITIVE_NEUTRAL',
+        ),
+      ),
+    ).toBe(true)
+  })
+
   it('deletes an assignment and keeps a deleted demo assignment removed', async () => {
     const deletion = api.deleteAssignment('demo-complete')
     await vi.runAllTimersAsync()

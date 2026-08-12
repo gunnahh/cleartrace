@@ -214,7 +214,328 @@ const seed: Assignment[] = [
       },
     ],
   },
+  ...createAdditionalSampleAssignments(),
 ]
+
+function createAdditionalSampleAssignments(): Assignment[] {
+  const companies = [
+    [
+      'Chao Phraya Digital Solutions Co., Ltd.',
+      'บริษัท เจ้าพระยา ดิจิทัล โซลูชันส์ จำกัด',
+      'Technology consulting',
+    ],
+    ['Lanna Green Energy Co., Ltd.', 'บริษัท ล้านนา กรีน เอ็นเนอร์จี จำกัด', 'Renewable energy'],
+    [
+      'Andaman Marine Services Co., Ltd.',
+      'บริษัท อันดามัน มารีน เซอร์วิส จำกัด',
+      'Marine services',
+    ],
+    [
+      'Isan Harvest Trading Co., Ltd.',
+      'บริษัท อีสาน ฮาร์เวสต์ เทรดดิ้ง จำกัด',
+      'Agricultural trading',
+    ],
+    [
+      'Sukhumvit Health Network Co., Ltd.',
+      'บริษัท สุขุมวิท เฮลท์ เน็ตเวิร์ค จำกัด',
+      'Healthcare services',
+    ],
+    [
+      'Mekong Precision Parts Co., Ltd.',
+      'บริษัท แม่โขง พรีซิชั่น พาร์ทส์ จำกัด',
+      'Automotive parts',
+    ],
+    [
+      'Rattanakosin Property Group Co., Ltd.',
+      'บริษัท รัตนโกสินทร์ พร็อพเพอร์ตี้ กรุ๊ป จำกัด',
+      'Property development',
+    ],
+    [
+      'Eastern Seaboard Chemicals Co., Ltd.',
+      'บริษัท อีสเทิร์น ซีบอร์ด เคมิคอลส์ จำกัด',
+      'Industrial chemicals',
+    ],
+    [
+      'Golden Triangle Hospitality Co., Ltd.',
+      'บริษัท โกลเด้น ไทรแองเกิล ฮอสพิทาลิตี้ จำกัด',
+      'Hotels and tourism',
+    ],
+    [
+      'Bangkok Cloud Systems Co., Ltd.',
+      'บริษัท บางกอก คลาวด์ ซิสเต็มส์ จำกัด',
+      'Cloud infrastructure',
+    ],
+    [
+      'Ayutthaya Heritage Foods Co., Ltd.',
+      'บริษัท อยุธยา เฮอริเทจ ฟู้ดส์ จำกัด',
+      'Food manufacturing',
+    ],
+    [
+      'Southern Palm Industries Co., Ltd.',
+      'บริษัท เซาเทิร์น ปาล์ม อินดัสทรีส์ จำกัด',
+      'Palm oil processing',
+    ],
+    [
+      'Siam Vertex Construction Co., Ltd.',
+      'บริษัท สยาม เวอร์เท็กซ์ คอนสตรัคชั่น จำกัด',
+      'Construction',
+    ],
+    ['Nakhon Smart Retail Co., Ltd.', 'บริษัท นคร สมาร์ท รีเทล จำกัด', 'Retail technology'],
+    [
+      'Blue Lotus Pharmaceuticals Co., Ltd.',
+      'บริษัท บลู โลตัส ฟาร์มาซูติคอลส์ จำกัด',
+      'Pharmaceuticals',
+    ],
+    [
+      'Thai Horizon Aviation Services Co., Ltd.',
+      'บริษัท ไทย ฮอไรซัน เอวิเอชั่น เซอร์วิส จำกัด',
+      'Aviation services',
+    ],
+    [
+      'Emerald Education Group Co., Ltd.',
+      'บริษัท เอมเมอรัลด์ เอ็ดดูเคชั่น กรุ๊ป จำกัด',
+      'Education services',
+    ],
+    [
+      'Riverbend Packaging Co., Ltd.',
+      'บริษัท ริเวอร์เบนด์ แพ็กเกจจิ้ง จำกัด',
+      'Sustainable packaging',
+    ],
+    [
+      'Pattaya Coastal Development Co., Ltd.',
+      'บริษัท พัทยา โคสทัล ดีเวลลอปเมนท์ จำกัด',
+      'Property development',
+    ],
+    [
+      'Northern Star Textiles Co., Ltd.',
+      'บริษัท นอร์เทิร์น สตาร์ เท็กซ์ไทล์ส จำกัด',
+      'Textile manufacturing',
+    ],
+  ] as const
+  const scenarios: {
+    label: string
+    status: Assignment['status']
+    categories: SearchCategory[]
+    attempts: { category: SearchCategory; result: SearchResult; language?: SearchLanguage }[]
+  }[] = [
+    { label: 'Draft without evidence', status: 'DRAFT', categories: ['LITIGATION'], attempts: [] },
+    {
+      label: 'Litigation no result',
+      status: 'IN_PROGRESS',
+      categories: ['LITIGATION'],
+      attempts: [{ category: 'LITIGATION', result: 'NO_RESULT' }],
+    },
+    {
+      label: 'Bankruptcy source unavailable',
+      status: 'IN_PROGRESS',
+      categories: ['BANKRUPTCY'],
+      attempts: [{ category: 'BANKRUPTCY', result: 'SOURCE_UNAVAILABLE' }],
+    },
+    {
+      label: 'Litigation record found',
+      status: 'IN_PROGRESS',
+      categories: ['LITIGATION'],
+      attempts: [{ category: 'LITIGATION', result: 'RECORD_FOUND' }],
+    },
+    {
+      label: 'Bankruptcy record found',
+      status: 'IN_PROGRESS',
+      categories: ['BANKRUPTCY'],
+      attempts: [{ category: 'BANKRUPTCY', result: 'RECORD_FOUND' }],
+    },
+    {
+      label: 'Positive media record found',
+      status: 'IN_PROGRESS',
+      categories: ['MEDIA_POSITIVE_NEUTRAL'],
+      attempts: [{ category: 'MEDIA_POSITIVE_NEUTRAL', result: 'RECORD_FOUND' }],
+    },
+    {
+      label: 'Negative media record found',
+      status: 'IN_PROGRESS',
+      categories: ['MEDIA_NEGATIVE'],
+      attempts: [{ category: 'MEDIA_NEGATIVE', result: 'RECORD_FOUND' }],
+    },
+    {
+      label: 'Both media categories found',
+      status: 'IN_PROGRESS',
+      categories: ['MEDIA_POSITIVE_NEUTRAL', 'MEDIA_NEGATIVE'],
+      attempts: [
+        { category: 'MEDIA_POSITIVE_NEUTRAL', result: 'RECORD_FOUND' },
+        { category: 'MEDIA_NEGATIVE', result: 'RECORD_FOUND' },
+      ],
+    },
+    {
+      label: 'Legal and media records found',
+      status: 'IN_PROGRESS',
+      categories: ['LITIGATION', 'MEDIA_NEGATIVE'],
+      attempts: [
+        { category: 'LITIGATION', result: 'RECORD_FOUND' },
+        { category: 'MEDIA_NEGATIVE', result: 'RECORD_FOUND' },
+      ],
+    },
+    {
+      label: 'Mixed search outcomes',
+      status: 'IN_PROGRESS',
+      categories: [...searchCategories],
+      attempts: [
+        { category: 'LITIGATION', result: 'RECORD_FOUND' },
+        { category: 'BANKRUPTCY', result: 'NO_RESULT' },
+        { category: 'MEDIA_POSITIVE_NEUTRAL', result: 'RECORD_FOUND' },
+        { category: 'MEDIA_NEGATIVE', result: 'SOURCE_UNAVAILABLE' },
+      ],
+    },
+    {
+      label: 'English search only',
+      status: 'IN_PROGRESS',
+      categories: ['LITIGATION', 'BANKRUPTCY'],
+      attempts: [{ category: 'LITIGATION', result: 'NO_RESULT', language: 'EN' }],
+    },
+    {
+      label: 'Thai search only',
+      status: 'IN_PROGRESS',
+      categories: ['LITIGATION', 'BANKRUPTCY'],
+      attempts: [{ category: 'BANKRUPTCY', result: 'NO_RESULT', language: 'TH' }],
+    },
+    {
+      label: 'Bilingual litigation complete',
+      status: 'READY_TO_SUBMIT',
+      categories: ['LITIGATION'],
+      attempts: [
+        { category: 'LITIGATION', result: 'NO_RESULT', language: 'EN' },
+        { category: 'LITIGATION', result: 'NO_RESULT', language: 'TH' },
+      ],
+    },
+    {
+      label: 'Bilingual positive media complete',
+      status: 'READY_TO_SUBMIT',
+      categories: ['MEDIA_POSITIVE_NEUTRAL'],
+      attempts: [
+        { category: 'MEDIA_POSITIVE_NEUTRAL', result: 'NO_RESULT', language: 'EN' },
+        { category: 'MEDIA_POSITIVE_NEUTRAL', result: 'NO_RESULT', language: 'TH' },
+      ],
+    },
+    {
+      label: 'All categories partially complete',
+      status: 'IN_PROGRESS',
+      categories: [...searchCategories],
+      attempts: [
+        { category: 'LITIGATION', result: 'NO_RESULT' },
+        { category: 'MEDIA_POSITIVE_NEUTRAL', result: 'NO_RESULT' },
+      ],
+    },
+    {
+      label: 'Ready with legal match to document',
+      status: 'READY_TO_SUBMIT',
+      categories: ['LITIGATION', 'BANKRUPTCY'],
+      attempts: [
+        { category: 'LITIGATION', result: 'RECORD_FOUND' },
+        { category: 'BANKRUPTCY', result: 'NO_RESULT' },
+      ],
+    },
+    {
+      label: 'Ready with media match to document',
+      status: 'READY_TO_SUBMIT',
+      categories: ['MEDIA_POSITIVE_NEUTRAL', 'MEDIA_NEGATIVE'],
+      attempts: [
+        { category: 'MEDIA_POSITIVE_NEUTRAL', result: 'RECORD_FOUND' },
+        { category: 'MEDIA_NEGATIVE', result: 'NO_RESULT' },
+      ],
+    },
+    {
+      label: 'Submitted legal assignment',
+      status: 'SUBMITTED',
+      categories: ['LITIGATION'],
+      attempts: [{ category: 'LITIGATION', result: 'NO_RESULT' }],
+    },
+    {
+      label: 'Submitted media assignment',
+      status: 'SUBMITTED',
+      categories: ['MEDIA_NEGATIVE'],
+      attempts: [{ category: 'MEDIA_NEGATIVE', result: 'NO_RESULT' }],
+    },
+    {
+      label: 'Submitted full-scope assignment',
+      status: 'SUBMITTED',
+      categories: [...searchCategories],
+      attempts: [
+        { category: 'LITIGATION', result: 'NO_RESULT' },
+        { category: 'BANKRUPTCY', result: 'NO_RESULT' },
+        { category: 'MEDIA_POSITIVE_NEUTRAL', result: 'NO_RESULT' },
+        { category: 'MEDIA_NEGATIVE', result: 'NO_RESULT' },
+      ],
+    },
+  ]
+
+  return companies.map(([nameEnglish, nameThai, businessEnglish], index) => {
+    const number = index + 16
+    const id = `demo-sample-${number}`
+    const targetId = `${id}-subject`
+    const scenario = scenarios[index]
+    const { categories, status } = scenario
+    const attempts: SearchAttempt[] = scenario.attempts.map((item, attemptIndex) => ({
+      id: `${id}-evidence-${attemptIndex + 1}`,
+      targetId,
+      category: item.category,
+      sourceName: item.category.startsWith('MEDIA')
+        ? 'Thailand News Archive Demo'
+        : 'Public Records Demo',
+      sourceUrl:
+        item.result === 'RECORD_FOUND'
+          ? `https://example.com/source/${id}-${attemptIndex + 1}`
+          : '',
+      resultPageUrl:
+        item.result === 'NO_RESULT' ? `https://example.com/search/${id}-${attemptIndex + 1}` : '',
+      searchQuery: nameEnglish,
+      searchLanguage: item.language ?? 'EN',
+      searchedAt: `2026-08-${String((index % 9) + 1).padStart(2, '0')}`,
+      result: item.result,
+      reason: item.result === 'SOURCE_UNAVAILABLE' ? 'The demo source was unavailable.' : '',
+      evidence: [`${id}-evidence-${attemptIndex + 1}.png`],
+      notesOriginal: scenario.label,
+      translationEnglish: '',
+      createdAt: `2026-08-${String((index % 9) + 1).padStart(2, '0')}T04:00:00.000Z`,
+    }))
+
+    return {
+      id,
+      referenceId: `CTR-2026-${String(number).padStart(3, '0')}`,
+      status,
+      createdAt: `2026-07-${String((index % 20) + 1).padStart(2, '0')}`,
+      submittedAt: status === 'SUBMITTED' ? '2026-08-10T09:00:00.000Z' : undefined,
+      nameEnglish,
+      nameThai,
+      registrationNumber: `0105569${String(200000 + index).padStart(6, '0')}`,
+      incorporationDate: `${2010 + (index % 12)}-${String((index % 12) + 1).padStart(2, '0')}-15`,
+      formerNames: [],
+      addressEnglish: `${100 + index} Sample Road, Bangkok, Thailand`,
+      addressThai: `${100 + index} ถนนตัวอย่าง กรุงเทพมหานคร`,
+      website: `https://example.com/company-${number}`,
+      registeredCapital: String((index + 1) * 5000000),
+      paidUpCapital: String((index + 1) * 5000000),
+      currency: 'THB',
+      businessEnglish,
+      businessThai: 'ธุรกิจตัวอย่างสำหรับการทดสอบระบบ',
+      clientName: `Test scenario: ${scenario.label}`,
+      dueDate: `2026-${index < 10 ? '08' : '09'}-${String((index % 20) + 10).padStart(2, '0')}`,
+      researchFrom: '2016-08-01',
+      researchTo: '2026-08-01',
+      categories,
+      parties: [],
+      targets: [
+        {
+          id: targetId,
+          targetType: 'SUBJECT_COMPANY',
+          nameEnglish,
+          nameThai,
+          identificationNumber: `0105569${String(200000 + index).padStart(6, '0')}`,
+        },
+      ],
+      attempts,
+      cases: [],
+      media: [],
+    }
+  })
+}
 function load() {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(KEY) || 'null')
