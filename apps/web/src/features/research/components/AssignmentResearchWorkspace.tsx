@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router'
 import * as Tabs from '@radix-ui/react-tabs'
 import { Badge, Button, Card, Heading, Progress, Spinner, Text } from '@radix-ui/themes'
 import { ArrowLeft } from 'lucide-react'
+import { DeleteConfirmationDialog } from '../../../components/DeleteConfirmationDialog'
 import type { SearchAttempt, SearchEvidencePreset } from '../../../entities/search-attempt'
 import { api, assignmentKeys } from '../../../lib/api'
 import { assignmentStatusColor, completion, formatAssignmentStatus } from '../../assignments/model'
@@ -29,6 +30,7 @@ export function AssignmentResearchWorkspace({
   const [evidencePreset, setEvidencePreset] = useState<SearchEvidencePreset | null>(null)
   const [editingAttempt, setEditingAttempt] = useState<SearchAttempt | null>(null)
   const [announcement, setAnnouncement] = useState('')
+  const [evidenceToDelete, setEvidenceToDelete] = useState<SearchAttempt | null>(null)
   const queryClient = useQueryClient()
   const deleteEvidence = useMutation({
     mutationFn: (attemptId: string) => api.deleteSearchEvidence(assignmentId, attemptId),
@@ -142,8 +144,7 @@ export function AssignmentResearchWorkspace({
             onAddEvidence={openEvidence}
             onEditEvidence={editEvidence}
             onDeleteEvidence={(attempt) => {
-              if (window.confirm(`Delete search evidence “${attempt.sourceName}”?`))
-                deleteEvidence.mutate(attempt.id)
+              setEvidenceToDelete(attempt)
             }}
           />
         </Tabs.Content>
@@ -153,8 +154,7 @@ export function AssignmentResearchWorkspace({
             onAddEvidence={openEvidence}
             onEditEvidence={editEvidence}
             onDeleteEvidence={(attempt) => {
-              if (window.confirm(`Delete search evidence “${attempt.sourceName}”?`))
-                deleteEvidence.mutate(attempt.id)
+              setEvidenceToDelete(attempt)
             }}
           />
         </Tabs.Content>
@@ -183,6 +183,20 @@ export function AssignmentResearchWorkspace({
           }}
         />
       )}
+      <DeleteConfirmationDialog
+        open={Boolean(evidenceToDelete)}
+        title="Delete search evidence?"
+        description={
+          evidenceToDelete ? `This will permanently delete “${evidenceToDelete.sourceName}”.` : ''
+        }
+        pending={deleteEvidence.isPending}
+        onOpenChange={(open) => {
+          if (!open) setEvidenceToDelete(null)
+        }}
+        onConfirm={() => {
+          if (evidenceToDelete) deleteEvidence.mutate(evidenceToDelete.id)
+        }}
+      />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { Button, Card, Heading, Text } from '@radix-ui/themes'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Newspaper, Plus } from 'lucide-react'
 import type { MediaFinding } from '../../../entities/media-finding'
+import { DeleteConfirmationDialog } from '../../../components/DeleteConfirmationDialog'
 import { api, assignmentKeys } from '../../../lib/api'
 import type { Assignment } from '../../assignments/model'
 import { getMediaCheckMatches, hasConfiguredMediaCategory } from '../model/media-checks'
@@ -13,6 +14,7 @@ export function MediaNewsTab({ assignment }: { assignment: Assignment }) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingFinding, setEditingFinding] = useState<MediaFinding | null>(null)
   const [announcement, setAnnouncement] = useState('')
+  const [findingToDelete, setFindingToDelete] = useState<MediaFinding | null>(null)
   const queryClient = useQueryClient()
   const mediaChecks = getMediaCheckMatches(assignment.attempts)
   const positiveNeutral = assignment.media.filter((finding) => finding.sentiment !== 'NEGATIVE')
@@ -46,8 +48,7 @@ export function MediaNewsTab({ assignment }: { assignment: Assignment }) {
     setDialogOpen(true)
   }
   const deleteFinding = (finding: MediaFinding) => {
-    if (window.confirm(`Delete media finding “${finding.articleTitle}”?`))
-      deleteMutation.mutate(finding.id)
+    setFindingToDelete(finding)
   }
 
   return (
@@ -126,6 +127,20 @@ export function MediaNewsTab({ assignment }: { assignment: Assignment }) {
           }
         />
       )}
+      <DeleteConfirmationDialog
+        open={Boolean(findingToDelete)}
+        title="Delete media finding?"
+        description={
+          findingToDelete ? `This will permanently delete “${findingToDelete.articleTitle}”.` : ''
+        }
+        pending={deleteMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) setFindingToDelete(null)
+        }}
+        onConfirm={() => {
+          if (findingToDelete) deleteMutation.mutate(findingToDelete.id)
+        }}
+      />
     </>
   )
 }

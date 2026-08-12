@@ -17,6 +17,7 @@ import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-q
 import { ExternalLink, FileText, Gavel, Plus, X } from 'lucide-react'
 import { Controller, useForm, type UseFormReturn } from 'react-hook-form'
 import { Field } from '../../../components/Field'
+import { DeleteConfirmationDialog } from '../../../components/DeleteConfirmationDialog'
 import {
   courtLevels,
   createResearchCheckKey,
@@ -52,6 +53,7 @@ export function CaseDetailsTab({
   const [editingCase, setEditingCase] = useState<LegalCase | null>(null)
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null)
   const [announcement, setAnnouncement] = useState('')
+  const [caseToDelete, setCaseToDelete] = useState<LegalCase | null>(null)
   const queryClient = useQueryClient()
   const legalChecks = getLegalCheckMatches(assignment.attempts)
   const form = useForm<LegalCaseInput>({
@@ -195,8 +197,7 @@ export function CaseDetailsTab({
                         title="Delete"
                         disabled={deleteMutation.isPending}
                         onClick={() => {
-                          if (window.confirm(`Delete legal case ${legalCase.caseNumber}?`))
-                            deleteMutation.mutate(legalCase.id)
+                          setCaseToDelete(legalCase)
                         }}
                       >
                         <TrashIcon />
@@ -285,6 +286,21 @@ export function CaseDetailsTab({
           </div>
         )}
       </Card>
+
+      <DeleteConfirmationDialog
+        open={Boolean(caseToDelete)}
+        title="Delete legal case?"
+        description={
+          caseToDelete ? `This will permanently delete legal case ${caseToDelete.caseNumber}.` : ''
+        }
+        pending={deleteMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) setCaseToDelete(null)
+        }}
+        onConfirm={() => {
+          if (caseToDelete) deleteMutation.mutate(caseToDelete.id)
+        }}
+      />
 
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>

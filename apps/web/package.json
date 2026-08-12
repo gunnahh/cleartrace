@@ -12,6 +12,7 @@
   "dependencies": {
     "@cleartrace/contracts": "*",
     "@hookform/resolvers": "latest",
+    "@radix-ui/react-alert-dialog": "latest",
     "@radix-ui/react-dialog": "latest",
     "@radix-ui/react-tabs": "latest",
     "@radix-ui/themes": "latest",

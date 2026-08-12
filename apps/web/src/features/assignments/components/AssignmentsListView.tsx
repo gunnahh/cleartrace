@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { EyeOpenIcon, TrashIcon } from '@radix-ui/react-icons'
 import { Link } from '@tanstack/react-router'
@@ -16,6 +17,7 @@ import {
   TextField,
 } from '@radix-ui/themes'
 import { Plus, Search } from 'lucide-react'
+import { DeleteConfirmationDialog } from '../../../components/DeleteConfirmationDialog'
 import { api, assignmentKeys } from '../../../lib/api'
 import { assignmentStatuses, assignmentStatusColor, formatAssignmentStatus } from '../model'
 const currentTime = new Date('2026-08-09T00:00:00Z').getTime()
@@ -31,6 +33,9 @@ type AssignmentsListViewProps = {
 }
 
 export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsListViewProps) {
+  const [assignmentToDelete, setAssignmentToDelete] = useState<
+    { id: string; referenceId: string; nameEnglish: string } | undefined
+  >()
   const queryClient = useQueryClient()
   const q = useQuery({ queryKey: assignmentKeys.list(filters), queryFn: api.list })
   const deleteAssignment = useMutation({
@@ -195,12 +200,7 @@ export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsLis
                                   : 'Delete assignment'
                               }
                               onClick={() => {
-                                if (
-                                  window.confirm(
-                                    `Delete assignment ${a.referenceId} for ${a.nameEnglish}?`,
-                                  )
-                                )
-                                  deleteAssignment.mutate(a.id)
+                                setAssignmentToDelete(a)
                               }}
                             >
                               <TrashIcon />
@@ -216,6 +216,22 @@ export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsLis
           </Box>
         )}
       </Card>
+      <DeleteConfirmationDialog
+        open={Boolean(assignmentToDelete)}
+        title="Delete assignment?"
+        description={
+          assignmentToDelete
+            ? `This will permanently delete assignment ${assignmentToDelete.referenceId} for ${assignmentToDelete.nameEnglish}.`
+            : ''
+        }
+        pending={deleteAssignment.isPending}
+        onOpenChange={(open) => {
+          if (!open) setAssignmentToDelete(undefined)
+        }}
+        onConfirm={() => {
+          if (assignmentToDelete) deleteAssignment.mutate(assignmentToDelete.id)
+        }}
+      />
     </div>
   )
 }

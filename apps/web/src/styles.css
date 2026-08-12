@@ -454,6 +454,23 @@ legend {
   flex-direction: column;
   gap: 18px;
 }
+.delete-confirmation-dialog {
+  top: 50%;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  transform: translateY(-50%);
+}
+.delete-confirmation-dialog h2 {
+  margin: 0 0 10px;
+}
+.delete-confirmation-dialog p {
+  margin: 0;
+  color: var(--gray-11);
+  line-height: 1.5;
+}
+.delete-confirmation-actions {
+  margin-top: 24px;
+}
 .file {
   border: 1px dashed #b9b8c8;
   border-radius: 8px;
