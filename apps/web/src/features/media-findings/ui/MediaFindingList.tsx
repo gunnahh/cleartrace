@@ -1,6 +1,13 @@
 import { Badge, Button, Heading, Text } from '@radix-ui/themes'
 import { Pencil1Icon, TrashIcon } from '@radix-ui/react-icons'
-import { ExternalLink, FileText } from 'lucide-react'
+import {
+  CalendarDays,
+  ExternalLink,
+  FileText,
+  Newspaper,
+  ShieldAlert,
+  Sparkles,
+} from 'lucide-react'
 import { isHttpUrl } from '../../../entities/legal-case'
 import { mediaFindingLabel, type MediaFinding } from '../../../entities/media-finding'
 import type { Assignment } from '../../assignments/model'
@@ -22,61 +29,89 @@ export function MediaFindingList({
   onEdit?: (finding: MediaFinding) => void
   onDelete?: (finding: MediaFinding) => void
 }) {
+  const SectionIcon = negative ? ShieldAlert : Sparkles
   return (
-    <section>
+    <section className={`media-section${negative ? ' media-section--negative' : ''}`}>
       <div className="media-section-heading">
-        <Heading size="4">{title}</Heading>
-        <Badge color={negative ? 'red' : 'gray'}>
+        <div className="media-section-heading__identity">
+          <span className="media-section-heading__icon" aria-hidden="true">
+            <SectionIcon size={17} strokeWidth={1.8} />
+          </span>
+          <Heading as="h3" size="4">
+            {title}
+          </Heading>
+        </div>
+        <Badge
+          className="media-section-heading__count"
+          color={negative ? 'red' : 'gray'}
+          variant="soft"
+        >
           {findings.length} {findings.length === 1 ? 'result' : 'results'}
         </Badge>
       </div>
       {findings.length === 0 ? (
-        <Text color="gray">No findings recorded yet.</Text>
+        <div className="media-section__empty">
+          <Newspaper size={17} aria-hidden="true" />
+          <Text size="2" color="gray">
+            No findings recorded yet.
+          </Text>
+        </div>
       ) : (
         <div className="media-list">
           {findings.map((finding) => {
             const target = assignment.targets.find((item) => item.id === finding.targetId)
             return (
               <article
-                className={`media-card${negative ? ' media-card-negative' : ''}`}
+                className={`media-card media-card--${finding.sentiment.toLowerCase()}${negative ? ' media-card-negative' : ''}`}
                 key={finding.id}
               >
                 <header>
-                  <div>
+                  <div className="media-card__headline">
                     <Badge
+                      className="media-card__sentiment"
                       color={negative ? 'red' : finding.sentiment === 'POSITIVE' ? 'green' : 'gray'}
+                      variant="soft"
                     >
                       {mediaFindingLabel(finding.sentiment)}
                     </Badge>
-                    <Heading size="4">{finding.articleTitle || 'Untitled legacy finding'}</Heading>
+                    <Heading as="h4" size="5">
+                      {finding.articleTitle || 'Untitled legacy finding'}
+                    </Heading>
                   </div>
-                  <Text size="2" color="gray">
-                    {finding.publishedAt || 'Date not recorded'}
-                  </Text>
+                  <div className="media-card__header-meta">
+                    <span className="media-card__date">
+                      <CalendarDays size={14} aria-hidden="true" />
+                      <Text size="2" color="gray">
+                        {finding.publishedAt || 'Date not recorded'}
+                      </Text>
+                    </span>
+                    {canEdit && (
+                      <div className="record-actions">
+                        <Button
+                          className="media-card__action"
+                          size="1"
+                          variant="soft"
+                          aria-label={`Edit media finding ${finding.articleTitle || 'Untitled legacy finding'}`}
+                          title="Edit"
+                          onClick={() => onEdit?.(finding)}
+                        >
+                          <Pencil1Icon />
+                        </Button>
+                        <Button
+                          className="media-card__action"
+                          size="1"
+                          variant="soft"
+                          color="red"
+                          aria-label={`Delete media finding ${finding.articleTitle || 'Untitled legacy finding'}`}
+                          title="Delete"
+                          onClick={() => onDelete?.(finding)}
+                        >
+                          <TrashIcon />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </header>
-                {canEdit && (
-                  <div className="record-actions">
-                    <Button
-                      size="1"
-                      variant="soft"
-                      aria-label="Edit media finding"
-                      title="Edit"
-                      onClick={() => onEdit?.(finding)}
-                    >
-                      <Pencil1Icon />
-                    </Button>
-                    <Button
-                      size="1"
-                      variant="soft"
-                      color="red"
-                      aria-label="Delete media finding"
-                      title="Delete"
-                      onClick={() => onDelete?.(finding)}
-                    >
-                      <TrashIcon />
-                    </Button>
-                  </div>
-                )}
                 <dl className="media-summary">
                   <div>
                     <dt>Checked party</dt>
@@ -90,17 +125,19 @@ export function MediaFindingList({
                     <dd>{finding.publisher || 'Not recorded'}</dd>
                   </div>
                 </dl>
-                <div className="media-copy">
-                  <Text size="1" weight="bold" color="gray">
-                    Original-language summary
-                  </Text>
-                  <Text size="2">{finding.summaryOriginal || 'Not recorded'}</Text>
-                </div>
-                <div className="media-copy">
-                  <Text size="1" weight="bold" color="gray">
-                    English summary
-                  </Text>
-                  <Text size="2">{finding.summaryEnglish || 'Not recorded'}</Text>
+                <div className="media-copy-grid">
+                  <div className="media-copy">
+                    <Text size="1" weight="bold" color="gray">
+                      Original-language summary
+                    </Text>
+                    <Text size="2">{finding.summaryOriginal || 'Not recorded'}</Text>
+                  </div>
+                  <div className="media-copy">
+                    <Text size="1" weight="bold" color="gray">
+                      English summary
+                    </Text>
+                    <Text size="2">{finding.summaryEnglish || 'Not recorded'}</Text>
+                  </div>
                 </div>
                 <footer>
                   <span>

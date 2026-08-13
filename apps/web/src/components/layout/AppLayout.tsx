@@ -41,24 +41,28 @@ const Nav = ({
   collapsed?: boolean
   onLogout: () => void
 }) => (
-  <nav aria-label="Primary">
-    <Link className="brand" to="/" onClick={close} aria-label="ClearTrace home">
-      <span className="brandmark">
+  <nav className="sidebar-nav" aria-label="Primary">
+    <Link className="sidebar-brand" to="/" onClick={close} aria-label="ClearTrace home">
+      <span className="sidebar-brand__mark" aria-hidden="true">
         <Search size={18} />
       </span>
-      <span className="brand-label">
+      <span className="sidebar-brand__label">
         ClearTrace<small>Research workspace</small>
       </span>
     </Link>
+    <span className="sidebar-nav__section-label">Workspace</span>
     <CollapsedTooltip collapsed={collapsed} label="Assignments">
       <Link
         aria-label="Assignments"
         onClick={close}
         to="/assignments"
         search={{ q: '', status: 'ALL' }}
-        activeProps={{ className: 'active' }}
+        activeOptions={{ includeSearch: false }}
+        activeProps={{ className: 'active', 'aria-current': 'page' }}
       >
-        <ClipboardList />
+        <span className="sidebar-nav__icon" aria-hidden="true">
+          <ClipboardList />
+        </span>
         <span className="nav-label">Assignments</span>
       </Link>
     </CollapsedTooltip>
@@ -67,9 +71,11 @@ const Nav = ({
         aria-label="Submitted reports"
         onClick={close}
         to="/reports/submitted"
-        activeProps={{ className: 'active' }}
+        activeProps={{ className: 'active', 'aria-current': 'page' }}
       >
-        <FileCheck2 />
+        <span className="sidebar-nav__icon" aria-hidden="true">
+          <FileCheck2 />
+        </span>
         <span className="nav-label">Submitted reports</span>
       </Link>
     </CollapsedTooltip>
@@ -78,18 +84,32 @@ const Nav = ({
         aria-label="Profile"
         onClick={close}
         to="/profile"
-        activeProps={{ className: 'active' }}
+        activeProps={{ className: 'active', 'aria-current': 'page' }}
       >
-        <UserRound />
+        <span className="sidebar-nav__icon" aria-hidden="true">
+          <UserRound />
+        </span>
         <span className="nav-label">Profile</span>
       </Link>
     </CollapsedTooltip>
-    <CollapsedTooltip collapsed={collapsed} label="Log out">
-      <button type="button" aria-label="Log out" onClick={onLogout}>
-        <LogOut />
-        <span className="nav-label">Log out</span>
-      </button>
-    </CollapsedTooltip>
+    <div className="sidebar-nav__account">
+      <span className="sidebar-nav__account-label">Account</span>
+      <CollapsedTooltip collapsed={collapsed} label="Log out">
+        <button
+          type="button"
+          aria-label="Log out"
+          onClick={() => {
+            close?.()
+            onLogout()
+          }}
+        >
+          <span className="sidebar-nav__icon" aria-hidden="true">
+            <LogOut />
+          </span>
+          <span className="nav-label">Log out</span>
+        </button>
+      </CollapsedTooltip>
+    </div>
   </nav>
 )
 
@@ -98,6 +118,7 @@ export function AppLayout() {
   const [collapsed, setCollapsed] = useState(
     () => window.localStorage.getItem('cleartrace.sidebar-collapsed') === 'true',
   )
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false)
 
   useEffect(() => {
     window.localStorage.setItem('cleartrace.sidebar-collapsed', String(collapsed))
@@ -113,7 +134,7 @@ export function AppLayout() {
 
   return (
     <div className={`app${collapsed ? ' sidebar-collapsed' : ''}`}>
-      <aside aria-label="Application sidebar">
+      <aside className="app-sidebar" id="application-sidebar" aria-label="Application sidebar">
         <Nav collapsed={collapsed} onLogout={logout} />
         <Tooltip content={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} side="right">
           <IconButton
@@ -121,6 +142,7 @@ export function AppLayout() {
             variant="soft"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-expanded={!collapsed}
+            aria-controls="application-sidebar"
             onClick={() => setCollapsed((value) => !value)}
           >
             {collapsed ? <ChevronRight /> : <ChevronLeft />}
@@ -128,23 +150,37 @@ export function AppLayout() {
         </Tooltip>
       </aside>
       <header className="mobilebar">
-        <strong>ClearTrace</strong>
-        <Dialog.Root>
+        <div className="mobilebar__brand" aria-label="ClearTrace">
+          <span className="mobilebar__brandmark" aria-hidden="true">
+            <Search size={16} />
+          </span>
+          <span>
+            ClearTrace<small>Research workspace</small>
+          </span>
+        </div>
+        <Dialog.Root open={mobileNavigationOpen} onOpenChange={setMobileNavigationOpen}>
           <Dialog.Trigger asChild>
-            <IconButton variant="soft" aria-label="Open navigation">
+            <IconButton className="mobilebar__trigger" variant="soft" aria-label="Open navigation">
               <Menu />
             </IconButton>
           </Dialog.Trigger>
           <Dialog.Portal>
-            <Dialog.Overlay className="overlay" />
-            <Dialog.Content className="drawer">
+            <Dialog.Overlay className="overlay sidebar-drawer-overlay" />
+            <Dialog.Content className="sidebar-drawer">
               <Dialog.Title className="sr-only">Navigation</Dialog.Title>
+              <Dialog.Description className="sr-only">
+                Navigate between ClearTrace workspaces and account settings.
+              </Dialog.Description>
               <Dialog.Close asChild>
-                <IconButton className="close" aria-label="Close navigation">
+                <IconButton
+                  className="sidebar-drawer__close"
+                  variant="soft"
+                  aria-label="Close navigation"
+                >
                   <X />
                 </IconButton>
               </Dialog.Close>
-              <Nav close={() => undefined} onLogout={logout} />
+              <Nav close={() => setMobileNavigationOpen(false)} onLogout={logout} />
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog.Root>

@@ -56,38 +56,56 @@ export function MediaNewsTab({ assignment }: { assignment: Assignment }) {
       <span className="sr-only" aria-live="polite">
         {announcement}
       </span>
-      <Card className="panel media-panel">
-        <div className="sectionhead">
-          <div>
-            <Heading size="4">Media news</Heading>
-            <Text size="2" color="gray">
-              Structured findings linked to recorded media searches.
-            </Text>
-          </div>
-          {canEdit && mediaCategoryConfigured && (
-            <div className="actions">
-              {mediaChecks.length > 0 && (
-                <Button onClick={openFindingForm}>
-                  <Plus />
-                  Add media
-                </Button>
-              )}
+      <Card className="panel media-panel premium-media-panel">
+        <div className="sectionhead feature-sectionhead media-sectionhead">
+          <div className="feature-section-heading">
+            <span className="feature-section-heading__icon media-heading__icon" aria-hidden="true">
+              <Newspaper size={20} strokeWidth={1.8} />
+            </span>
+            <div>
+              <div className="feature-section-heading__eyebrow">
+                Media intelligence
+                <span aria-hidden="true">·</span>
+                {assignment.media.length} {assignment.media.length === 1 ? 'finding' : 'findings'}
+              </div>
+              <Heading as="h2" className="feature-section-heading__title" size="5">
+                Media news
+              </Heading>
+              <Text size="2" color="gray">
+                Structured findings linked to recorded media searches.
+              </Text>
             </div>
+          </div>
+          {canEdit && mediaCategoryConfigured && mediaChecks.length > 0 && (
+            <Button className="feature-section-action" size="3" onClick={openFindingForm}>
+              <Plus size={18} aria-hidden="true" />
+              Add media
+            </Button>
           )}
         </div>
 
         {!mediaCategoryConfigured && assignment.media.length === 0 ? (
-          <div className="research-empty">
-            <Newspaper aria-hidden="true" />
-            <Heading size="4">No media checks configured</Heading>
+          <div className="research-empty premium-empty-state">
+            <span className="premium-empty-state__icon" aria-hidden="true">
+              <Newspaper />
+            </span>
+            <Text className="premium-empty-state__eyebrow">Media intelligence</Text>
+            <Heading as="h3" size="5">
+              No media checks configured
+            </Heading>
             <Text color="gray">
               This assignment does not include positive/neutral or negative media research.
             </Text>
           </div>
         ) : mediaChecks.length === 0 && assignment.media.length === 0 ? (
-          <div className="research-empty">
-            <Newspaper aria-hidden="true" />
-            <Heading size="4">Record a media match first</Heading>
+          <div className="research-empty premium-empty-state">
+            <span className="premium-empty-state__icon" aria-hidden="true">
+              <Newspaper />
+            </span>
+            <Text className="premium-empty-state__eyebrow">Media intelligence</Text>
+            <Heading as="h3" size="5">
+              Record a media match first
+            </Heading>
             <Text color="gray">
               Add record-found evidence for a positive/neutral or negative media check before
               creating a structured finding.

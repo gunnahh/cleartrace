@@ -16,11 +16,20 @@ import {
   Text,
   TextField,
 } from '@radix-ui/themes'
-import { Plus, Search } from 'lucide-react'
+import {
+  Activity,
+  CircleCheck,
+  Clock3,
+  FileCheck2,
+  Plus,
+  Search,
+  SlidersHorizontal,
+} from 'lucide-react'
 import { DeleteConfirmationDialog } from '../../../components/DeleteConfirmationDialog'
 import { api, assignmentKeys } from '../../../lib/api'
 import { assignmentStatuses, assignmentStatusColor, formatAssignmentStatus } from '../model'
 const currentTime = new Date('2026-08-09T00:00:00Z').getTime()
+const rowsPerPage = 6
 
 export type AssignmentFilters = {
   q: string
@@ -33,6 +42,7 @@ type AssignmentsListViewProps = {
 }
 
 export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsListViewProps) {
+  const [page, setPage] = useState(1)
   const [assignmentToDelete, setAssignmentToDelete] = useState<
     { id: string; referenceId: string; nameEnglish: string } | undefined
   >()
@@ -50,6 +60,9 @@ export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsLis
           .includes(filters.q.toLowerCase())) &&
       (filters.status === 'ALL' || a.status === filters.status),
   )
+  const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage))
+  const currentPage = Math.min(page, totalPages)
+  const paginatedRows = rows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
   const counts = {
     progress: q.data?.filter((x) => x.status === 'IN_PROGRESS').length || 0,
     due:
@@ -75,48 +88,72 @@ export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsLis
       </div>
       <section className="stats" aria-label="Assignment summary">
         {[
-          ['In progress', counts.progress],
-          ['Due soon', counts.due],
-          ['Ready to submit', counts.ready],
-          ['Submitted', counts.submitted],
-        ].map(([x, n]) => (
-          <Card key={x}>
-            <Text size="2" color="gray">
-              {x}
-            </Text>
-            <strong>{n}</strong>
-          </Card>
+          { label: 'In progress', value: counts.progress, tone: 'progress', icon: Activity },
+          { label: 'Due soon', value: counts.due, tone: 'due', icon: Clock3 },
+          { label: 'Ready to submit', value: counts.ready, tone: 'ready', icon: CircleCheck },
+          { label: 'Submitted', value: counts.submitted, tone: 'submitted', icon: FileCheck2 },
+        ].map(({ label, value, tone, icon: Icon }) => (
+          <div className={`stat-card stat-card--${tone}`} key={label}>
+            <div className="stat-card__header">
+              <Text className="stat-card__label" size="2">
+                {label}
+              </Text>
+              <span className="stat-card__icon" aria-hidden="true">
+                <Icon size={18} strokeWidth={1.8} />
+              </span>
+            </div>
+            <div className="stat-card__metric">
+              <strong>{value}</strong>
+              <span>assignments</span>
+            </div>
+          </div>
         ))}
       </section>
       <Card className="panel" variant="ghost">
-        <Flex direction={{ initial: 'column', sm: 'row' }} gap="3" p="4">
-          <Box width={{ initial: '100%', sm: '320px' }}>
+        <Flex
+          className="assignment-toolbar"
+          direction={{ initial: 'column', sm: 'row' }}
+          gap="3"
+          role="search"
+          aria-label="Filter assignments"
+        >
+          <Box className="assignment-search-wrap">
             <TextField.Root
+              className="assignment-search"
+              size="3"
               aria-label="Search assignments"
               placeholder="Search ID or company…"
               value={filters.q}
-              onChange={(event) => onFiltersChange({ ...filters, q: event.target.value })}
+              onChange={(event) => {
+                setPage(1)
+                onFiltersChange({ ...filters, q: event.target.value })
+              }}
             >
               <TextField.Slot>
                 <Search size={16} />
               </TextField.Slot>
             </TextField.Root>
           </Box>
-          <Select.Root
-            value={filters.status}
-            onValueChange={(status) =>
-              onFiltersChange({ ...filters, status: status as AssignmentFilters['status'] })
-            }
-          >
-            <Select.Trigger aria-label="Filter by status" />
-            <Select.Content>
-              {(['ALL', ...assignmentStatuses] as const).map((x) => (
-                <Select.Item key={x} value={x}>
-                  {x === 'ALL' ? 'All statuses' : formatAssignmentStatus(x)}
-                </Select.Item>
-              ))}
-            </Select.Content>
-          </Select.Root>
+          <Box className="assignment-status-wrap">
+            <SlidersHorizontal className="assignment-status-icon" size={16} aria-hidden="true" />
+            <Select.Root
+              size="3"
+              value={filters.status}
+              onValueChange={(status) => {
+                setPage(1)
+                onFiltersChange({ ...filters, status: status as AssignmentFilters['status'] })
+              }}
+            >
+              <Select.Trigger className="assignment-status-trigger" aria-label="Filter by status" />
+              <Select.Content>
+                {(['ALL', ...assignmentStatuses] as const).map((x) => (
+                  <Select.Item key={x} value={x}>
+                    {x === 'ALL' ? 'All statuses' : formatAssignmentStatus(x)}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
+          </Box>
         </Flex>
         {deleteAssignment.isError && (
           <div className="state error" role="alert">
@@ -136,12 +173,15 @@ export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsLis
             <Text color="gray">Create an assignment or change your filters.</Text>
           </div>
         ) : (
-          <Box px="4">
-            <ScrollArea type="auto" scrollbars="horizontal">
+          <Box px="4" pb="4">
+            <ScrollArea className="assignments-table-scroll" type="auto" scrollbars="horizontal">
               <Box minWidth="800px">
                 <Table.Root>
                   <Table.Header style={{ backgroundColor: 'var(--iris-3)' }}>
                     <Table.Row>
+                      <Table.ColumnHeaderCell className="sequence-cell" justify="center">
+                        No.
+                      </Table.ColumnHeaderCell>
                       <Table.ColumnHeaderCell justify="center">Assignment</Table.ColumnHeaderCell>
                       <Table.ColumnHeaderCell justify="center">
                         Subject company
@@ -155,8 +195,11 @@ export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsLis
                     </Table.Row>
                   </Table.Header>
                   <Table.Body>
-                    {rows.map((a) => (
+                    {paginatedRows.map((a, index) => (
                       <Table.Row key={a.id}>
+                        <Table.Cell className="sequence-cell" justify="center">
+                          {(currentPage - 1) * rowsPerPage + index + 1}
+                        </Table.Cell>
                         <Table.Cell justify="center">
                           <strong>{a.referenceId}</strong>
                         </Table.Cell>
@@ -213,6 +256,38 @@ export function AssignmentsListView({ filters, onFiltersChange }: AssignmentsLis
                 </Table.Root>
               </Box>
             </ScrollArea>
+            <nav className="pagination" aria-label="Assignments pagination">
+              <Flex gap="2" align="center">
+                <Button
+                  size="1"
+                  variant="soft"
+                  disabled={currentPage === 1}
+                  onClick={() => setPage(currentPage - 1)}
+                >
+                  Previous
+                </Button>
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+                  <Button
+                    key={pageNumber}
+                    size="1"
+                    variant={pageNumber === currentPage ? 'solid' : 'soft'}
+                    aria-label={`Page ${pageNumber}`}
+                    aria-current={pageNumber === currentPage ? 'page' : undefined}
+                    onClick={() => setPage(pageNumber)}
+                  >
+                    {pageNumber}
+                  </Button>
+                ))}
+                <Button
+                  size="1"
+                  variant="soft"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setPage(currentPage + 1)}
+                >
+                  Next
+                </Button>
+              </Flex>
+            </nav>
           </Box>
         )}
       </Card>

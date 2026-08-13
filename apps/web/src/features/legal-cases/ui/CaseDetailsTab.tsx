@@ -14,7 +14,16 @@ import {
   Theme,
 } from '@radix-ui/themes'
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
-import { ExternalLink, FileText, Gavel, Plus, X } from 'lucide-react'
+import {
+  BookOpenCheck,
+  ExternalLink,
+  FileText,
+  FolderOpen,
+  Gavel,
+  Plus,
+  Quote,
+  X,
+} from 'lucide-react'
 import { Controller, useForm, type UseFormReturn } from 'react-hook-form'
 import { Field } from '../../../components/Field'
 import { DeleteConfirmationDialog } from '../../../components/DeleteConfirmationDialog'
@@ -127,26 +136,31 @@ export function CaseDetailsTab({
       <span className="sr-only" aria-live="polite">
         {announcement}
       </span>
-      <Card className="panel case-panel">
-        <div className="sectionhead">
-          <div>
-            <div className="case-heading-row">
-              <Heading size="4">Case details</Heading>
-              <Badge variant="soft">
+      <Card className="panel case-panel premium-case-panel">
+        <div className="sectionhead feature-sectionhead case-sectionhead">
+          <div className="feature-section-heading">
+            <span className="feature-section-heading__icon case-heading__icon" aria-hidden="true">
+              <Gavel size={20} strokeWidth={1.8} />
+            </span>
+            <div>
+              <div className="feature-section-heading__eyebrow">
+                Court records
+                <span aria-hidden="true">·</span>
                 {assignment.cases.length} {assignment.cases.length === 1 ? 'case' : 'cases'}
-              </Badge>
+              </div>
+              <Heading as="h2" className="feature-section-heading__title" size="5">
+                Case details
+              </Heading>
+              <Text size="2" color="gray">
+                Structured court records linked to a recorded legal match.
+              </Text>
             </div>
-            <Text size="2" color="gray">
-              Structured court records linked to a recorded legal match.
-            </Text>
           </div>
           {assignment.status !== 'SUBMITTED' && legalChecks.length > 0 && (
-            <div className="actions">
-              <Button onClick={() => openCaseForm()}>
-                <Plus />
-                Add legal case
-              </Button>
-            </div>
+            <Button className="feature-section-action" size="3" onClick={() => openCaseForm()}>
+              <Plus size={18} aria-hidden="true" />
+              Add legal case
+            </Button>
           )}
         </div>
 
@@ -156,54 +170,63 @@ export function CaseDetailsTab({
               const target = assignment.targets.find((item) => item.id === legalCase.targetId)
               return (
                 <article
-                  className="case-card"
+                  className={`case-card${legalCase.verdictStatus === 'FINAL' ? ' case-card--final' : ''}`}
                   key={legalCase.id || `${legalCase.caseNumber}-${index}`}
                 >
                   <header>
                     <div className="case-title">
                       <span className="case-icon" aria-hidden="true">
-                        <FileText />
+                        <BookOpenCheck />
                       </span>
                       <div>
-                        <Text size="1" color="gray">
+                        <Badge className="case-card__classification" variant="soft">
                           {legalCaseLabel(
                             legalCase.classification || legalCase.category || 'Legal',
                           )}
-                        </Text>
-                        <Heading size="4">{legalCase.caseNumber}</Heading>
+                        </Badge>
+                        <Heading as="h3" className="case-card__number" size="5">
+                          {legalCase.caseNumber}
+                        </Heading>
                       </div>
                     </div>
-                    <Badge color={legalCase.verdictStatus === 'FINAL' ? 'green' : 'gray'}>
-                      {legalCaseLabel(legalCase.verdictStatus || 'Unknown')}
-                    </Badge>
-                  </header>
-
-                  {assignment.status !== 'SUBMITTED' && (
-                    <div className="record-actions">
-                      <Button
-                        size="1"
+                    <div className="case-card__header-actions">
+                      <Badge
+                        className="case-card__status"
+                        color={legalCase.verdictStatus === 'FINAL' ? 'green' : 'gray'}
                         variant="soft"
-                        aria-label={`Edit legal case ${legalCase.caseNumber}`}
-                        title="Edit"
-                        onClick={() => openCaseForm(legalCase)}
                       >
-                        <Pencil1Icon />
-                      </Button>
-                      <Button
-                        size="1"
-                        variant="soft"
-                        color="red"
-                        aria-label={`Delete legal case ${legalCase.caseNumber}`}
-                        title="Delete"
-                        disabled={deleteMutation.isPending}
-                        onClick={() => {
-                          setCaseToDelete(legalCase)
-                        }}
-                      >
-                        <TrashIcon />
-                      </Button>
+                        {legalCaseLabel(legalCase.verdictStatus || 'Unknown')}
+                      </Badge>
+                      {assignment.status !== 'SUBMITTED' && (
+                        <div className="record-actions">
+                          <Button
+                            className="case-card__action"
+                            size="1"
+                            variant="soft"
+                            aria-label={`Edit legal case ${legalCase.caseNumber}`}
+                            title="Edit"
+                            onClick={() => openCaseForm(legalCase)}
+                          >
+                            <Pencil1Icon />
+                          </Button>
+                          <Button
+                            className="case-card__action"
+                            size="1"
+                            variant="soft"
+                            color="red"
+                            aria-label={`Delete legal case ${legalCase.caseNumber}`}
+                            title="Delete"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => {
+                              setCaseToDelete(legalCase)
+                            }}
+                          >
+                            <TrashIcon />
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </header>
 
                   <dl className="case-summary">
                     <div>
@@ -225,41 +248,56 @@ export function CaseDetailsTab({
                   </dl>
 
                   <div className="case-outcome">
-                    <Text size="1" weight="bold" color="gray">
-                      Verdict outcome
-                    </Text>
-                    <Text size="2">{legalCase.verdictOutcome}</Text>
+                    <span className="case-outcome__icon" aria-hidden="true">
+                      <Quote size={17} strokeWidth={1.8} />
+                    </span>
+                    <div>
+                      <Text size="1" weight="bold" color="gray">
+                        Verdict outcome
+                      </Text>
+                      <Text size="2">{legalCase.verdictOutcome}</Text>
+                    </div>
                   </div>
 
-                  <div className="case-documents">
-                    <Text size="1" weight="bold" color="gray">
-                      Supporting documents
-                    </Text>
-                    <span>
-                      <FileText aria-hidden="true" />
-                      {legalCase.originalSourceDocument || 'Original document not recorded'}
-                    </span>
-                    {legalCase.englishTranslatedDocument && (
+                  <footer className="case-card__footer">
+                    <div className="case-documents">
+                      <div className="case-documents__heading">
+                        <FolderOpen size={15} aria-hidden="true" />
+                        <Text size="1" weight="bold" color="gray">
+                          Supporting documents
+                        </Text>
+                      </div>
                       <span>
                         <FileText aria-hidden="true" />
-                        {legalCase.englishTranslatedDocument}
+                        {legalCase.originalSourceDocument || 'Original document not recorded'}
                       </span>
-                    )}
-                  </div>
+                      {legalCase.englishTranslatedDocument && (
+                        <span>
+                          <FileText aria-hidden="true" />
+                          {legalCase.englishTranslatedDocument}
+                        </span>
+                      )}
+                    </div>
 
-                  {isHttpUrl(legalCase.sourceUrl) && (
-                    <a href={legalCase.sourceUrl} target="_blank" rel="noreferrer">
-                      View recorded source <ExternalLink aria-hidden="true" />
-                    </a>
-                  )}
+                    {isHttpUrl(legalCase.sourceUrl) && (
+                      <a href={legalCase.sourceUrl} target="_blank" rel="noreferrer">
+                        View recorded source <ExternalLink aria-hidden="true" />
+                      </a>
+                    )}
+                  </footer>
                 </article>
               )
             })}
           </div>
         ) : legalChecks.length === 0 ? (
-          <div className="case-empty">
-            <Gavel aria-hidden="true" />
-            <Heading size="4">Record a legal match first</Heading>
+          <div className="case-empty premium-empty-state">
+            <span className="premium-empty-state__icon" aria-hidden="true">
+              <Gavel />
+            </span>
+            <Text className="premium-empty-state__eyebrow">Court records</Text>
+            <Heading as="h3" size="5">
+              Record a legal match first
+            </Heading>
             <Text color="gray">
               Add record-found evidence for a litigation or bankruptcy check before creating a
               structured case.
@@ -273,9 +311,14 @@ export function CaseDetailsTab({
             )}
           </div>
         ) : (
-          <div className="case-empty">
-            <FileText aria-hidden="true" />
-            <Heading size="4">No case details recorded</Heading>
+          <div className="case-empty premium-empty-state">
+            <span className="premium-empty-state__icon" aria-hidden="true">
+              <FileText />
+            </span>
+            <Text className="premium-empty-state__eyebrow">Court records</Text>
+            <Heading as="h3" size="5">
+              No case details recorded
+            </Heading>
             <Text color="gray">
               {legalChecks.length} recorded legal{' '}
               {legalChecks.length === 1 ? 'check is' : 'checks are'} ready to be documented.

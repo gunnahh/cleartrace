@@ -2,8 +2,17 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import * as Tabs from '@radix-ui/react-tabs'
-import { Badge, Button, Card, Heading, Progress, Spinner, Text } from '@radix-ui/themes'
-import { ArrowLeft } from 'lucide-react'
+import { Badge, Button, Heading, Progress, Spinner, Text } from '@radix-ui/themes'
+import {
+  ArrowLeft,
+  CircleCheck,
+  FileText,
+  Gavel,
+  ListChecks,
+  Newspaper,
+  Scale,
+  UsersRound,
+} from 'lucide-react'
 import { DeleteConfirmationDialog } from '../../../components/DeleteConfirmationDialog'
 import type { SearchAttempt, SearchEvidencePreset } from '../../../entities/search-attempt'
 import { api, assignmentKeys } from '../../../lib/api'
@@ -84,58 +93,105 @@ export function AssignmentResearchWorkspace({
   }
 
   return (
-    <div className="page">
+    <div className="page assignment-workspace">
       <span className="sr-only" aria-live="polite">
         {announcement}
       </span>
-      <Button asChild variant="ghost">
+      <Button className="workspace-back" asChild size="2" variant="ghost">
         <Link to="/assignments" search={{ q: '', status: 'ALL' }}>
-          <ArrowLeft />
+          <ArrowLeft size={16} aria-hidden="true" />
           Assignments
         </Link>
       </Button>
-      <div className="pagehead">
-        <div>
-          <Text size="2" color="gray">
-            {assignment.referenceId}
-          </Text>
-          <Heading size="7">{assignment.nameEnglish}</Heading>
-          <Text color="gray">{assignment.nameThai}</Text>
+      <section className="workspace-hero" aria-labelledby="assignment-title">
+        <div className="workspace-hero__header">
+          <div className="workspace-hero__identity">
+            <div className="workspace-hero__reference">
+              <span>Assignment</span>
+              <span aria-hidden="true">·</span>
+              <strong>{assignment.referenceId}</strong>
+            </div>
+            <Heading className="workspace-hero__title" id="assignment-title" size="8">
+              {assignment.nameEnglish}
+            </Heading>
+            <Text className="workspace-hero__subtitle" color="gray">
+              {assignment.nameThai}
+            </Text>
+          </div>
+          <div className="workspace-hero__actions">
+            <div className="workspace-hero__badges">
+              <Badge
+                className="workspace-hero__status"
+                size="2"
+                color={assignmentStatusColor(assignment.status)}
+              >
+                <span className="workspace-hero__status-dot" aria-hidden="true" />
+                {formatAssignmentStatus(assignment.status)}
+              </Badge>
+              <Badge className="workspace-autosave" size="2" color="green" variant="soft">
+                <CircleCheck size={14} aria-hidden="true" />
+                Auto saved
+              </Badge>
+            </div>
+            <Button className="workspace-preview" asChild size="3">
+              <Link to="/assignments/$assignmentId/report" params={{ assignmentId }}>
+                <FileText size={17} aria-hidden="true" />
+                Preview report
+              </Link>
+            </Button>
+          </div>
         </div>
-        <div className="actions">
-          <Badge size="2" color={assignmentStatusColor(assignment.status)}>
-            {formatAssignmentStatus(assignment.status)}
-          </Badge>
-          <Badge size="2" color="green" variant="soft">
-            Auto saved
-          </Badge>
-          <Button asChild>
-            <Link to="/assignments/$assignmentId/report" params={{ assignmentId }}>
-              Preview report
-            </Link>
-          </Button>
+        <div className="workspace-progress">
+          <div className="workspace-progress__header">
+            <div className="workspace-progress__label">
+              <span className="workspace-progress__icon" aria-hidden="true">
+                <ListChecks size={19} strokeWidth={1.8} />
+              </span>
+              <div>
+                <strong>Research completion</strong>
+                <span className="workspace-progress__copy">
+                  {progress.complete} of {progress.total} required searches completed
+                </span>
+              </div>
+            </div>
+            <div className="workspace-progress__value" aria-hidden="true">
+              <strong>{progress.percent}%</strong>
+              <span>complete</span>
+            </div>
+          </div>
+          <Progress
+            className="workspace-progress__bar"
+            size="3"
+            color={progress.percent === 100 ? 'green' : 'iris'}
+            value={progress.percent}
+            aria-label="Research completion"
+            aria-valuetext={`${progress.complete} of ${progress.total} required searches completed`}
+          />
         </div>
-      </div>
-      <Card className="progresscard">
-        <div className="row">
-          <strong>Research completion</strong>
-          <span>
-            {progress.complete} of {progress.total} required searches · {progress.percent}%
-          </span>
-        </div>
-        <Progress value={progress.percent} />
-      </Card>
+      </section>
 
       <Tabs.Root
-        className="tabs"
+        className="tabs workspace-tabs"
         value={activeTab}
         onValueChange={(value) => onTabChange(value as AssignmentWorkspaceTab)}
       >
-        <Tabs.List aria-label="Assignment research sections">
-          <Tabs.Trigger value="parties">Checked parties</Tabs.Trigger>
-          <Tabs.Trigger value="legal">Legal matches</Tabs.Trigger>
-          <Tabs.Trigger value="cases">Case details</Tabs.Trigger>
-          <Tabs.Trigger value="media">Media news</Tabs.Trigger>
+        <Tabs.List className="workspace-tabs__list" aria-label="Assignment research sections">
+          <Tabs.Trigger value="parties">
+            <UsersRound size={16} aria-hidden="true" />
+            Checked parties
+          </Tabs.Trigger>
+          <Tabs.Trigger value="legal">
+            <Scale size={16} aria-hidden="true" />
+            Legal matches
+          </Tabs.Trigger>
+          <Tabs.Trigger value="cases">
+            <Gavel size={16} aria-hidden="true" />
+            Case details
+          </Tabs.Trigger>
+          <Tabs.Trigger value="media">
+            <Newspaper size={16} aria-hidden="true" />
+            Media news
+          </Tabs.Trigger>
         </Tabs.List>
 
         <Tabs.Content value="parties">
